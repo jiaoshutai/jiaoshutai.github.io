@@ -315,7 +315,7 @@ table.grid tr.doneRow td{background:#F2F7F3}
       <div class="zoomTools">
         <label><span data-i18n="zoom_label">放大</span><input type="range" id="zoomRange" min="100" max="400" step="10" value="100"></label>
         <span id="zoomPct">100%</span>
-        <label><input type="checkbox" id="ctxOn"><span data-i18n="ctx_label">顯示左右鄰列（只作參考，紅框內才是本列）</span></label>
+        <label><input type="checkbox" id="ctxOn"><span data-i18n="ctx_label">顯示該列四周（只作參考，紅框內才是本列）</span></label>
         <button class="btn small" id="expLinePng" data-i18n="exp_line_png">導出本列影像 PNG</button>
       </div>
       <div class="locator" id="locator"><img id="pageImg" data-i18n-alt="page_img_alt" alt="整頁影像"><svg id="locSvg" preserveAspectRatio="none"></svg></div>
@@ -369,7 +369,7 @@ table.grid tr.doneRow td{background:#F2F7F3}
     </div>
   </div>
   </div>
-  <div class="empty" id="emptyHint"><span data-i18n="empty_hint">還沒有材料。請到「頁面清單」選擇存放圖片與 XML 的資料夾。</span></div>
+  <div class="empty" id="emptyHint"><span data-i18n-html="empty_hint">還沒有材料。請到「頁面清單」選擇存放圖片與 XML 的資料夾。</span></div>
 </section>
 
 <!-- ==================== 頁面清單 ==================== -->
@@ -469,7 +469,7 @@ const I18N = {
 "btn_prev_page":"← 上一頁","btn_next_undone":"下一張未完成 →","btn_to_list":"回頁面清單",
 "revisit_banner":"這一頁已經校完了，你現在是在複查。若不打算改動，可以直接按「下一張未完成」。",
 "flip_to_horiz":"改為橫排顯示","flip_to_vert":"改為豎排顯示",
-"zoom_label":"放大","ctx_label":"顯示左右鄰列（只作參考，紅框內才是本列）","exp_line_png":"導出本列影像 PNG",
+"zoom_label":"放大","ctx_label":"顯示該列四周（只作參考，紅框內才是本列）","exp_line_png":"導出本列影像 PNG",
 "page_img_alt":"整頁影像",
 "prog_a":"第 ","prog_b":" 列 / 共 ","prog_c":" 列",
 "ask_line":"這一列的候選文字與影像一致嗎？","vtag_unset":"未校",
@@ -492,11 +492,11 @@ const I18N = {
 "fold_label":"舊字形與通行形視為一致（計算 IAA 時建議勾選）",
 "cmp_empty":"載入兩份進度文件後，這裡會顯示字符一致率、分層一致率與分歧列。",
 "help_h_start":"如何開始",
-"help_start_p":"在「頁面清單」點「選擇工作資料夾」，選中存放圖片與 XML 的資料夾。圖片與 XML 依檔名自動配對，清單會標出已經校完的頁。再選其他資料夾，它的頁面會加進同一份清單。中途可以直接關閉校書臺，進度存在本機；下次打開校書臺、選同一個資料夾，就能從上次停下的地方繼續。每次收工請點「導出進度 JSON（整本）」，把檔案交給專案負責人。",
-"help_start_p_fsa":"在「頁面清單」點「選擇工作資料夾」，選中存放圖片與 XML 的資料夾。圖片與 XML 依檔名自動配對，清單會標出已經校完的頁。再選其他資料夾，它的頁面會加進同一份清單。每個判定都即時存在本機；關閉校書臺後再打開，會重新載入上次的資料夾（瀏覽器可能要你先點「重新開啟」並允許讀取），回到上次停下的那一頁。每次收工請點「導出進度 JSON（整本）」，把檔案交給專案負責人。",
-"help_start_p_desktop":"在「頁面清單」點「選擇工作資料夾」，選中存放圖片與 XML 的資料夾。圖片與 XML 依檔名自動配對，清單會標出已經校完的頁。再選其他資料夾，它的頁面會加進同一份清單。每個判定都即時存在本機；關閉校書臺後再打開，會自動重新載入上次的資料夾，回到上次停下的那一頁。每次收工請點「導出進度 JSON（整本）」，把檔案交給專案負責人。",
+"help_start_p":"在「頁面清單」點「選擇工作資料夾」，選中存放圖片與 XML 的資料夾。圖片與 XML 依檔名自動配對，清單會標出已經校完的頁。再選其他資料夾，它的頁面會加進同一份清單。中途可以直接關閉校書臺，進度存在本機；下次打開校書臺、選同一個資料夾，就能從上次停下的地方繼續。勾選字列與轉寫下方的<b>顯示該列四周</b>即可擴大顯示範圍。每次收工請點「導出進度 JSON（整本）」。",
+"help_start_p_fsa":"在「頁面清單」點「選擇工作資料夾」，選中存放圖片與 XML 的資料夾。圖片與 XML 依檔名自動配對，清單會標出已經校完的頁。再選其他資料夾，它的頁面會加進同一份清單。每個判定都即時存在本機；關閉校書臺後再打開，會重新載入上次的資料夾（瀏覽器可能要你先點「重新開啟」並允許讀取），回到上次停下的那一頁。勾選字列與轉寫下方的<b>顯示該列四周</b>即可擴大顯示範圍。每次收工請點「導出進度 JSON（整本）」。",
+"help_start_p_desktop":"在「頁面清單」點「選擇工作資料夾」，選中存放圖片與 XML 的資料夾。圖片與 XML 依檔名自動配對，清單會標出已經校完的頁。再選其他資料夾，它的頁面會加進同一份清單。每個判定都即時存在本機；關閉校書臺後再打開，會自動重新載入上次的資料夾，回到上次停下的那一頁。勾選字列與轉寫下方的<b>顯示該列四周</b>即可擴大顯示範圍。每次收工請點「導出進度 JSON（整本）」。",
 "help_h_use":"工具用途",
-"help_use_p":"左側是書頁上的一列字，已裁切放大；右側是這一列的既有轉寫。工作分兩種，由專案負責人指定。<b>覆核</b>：看圖判斷右側文字是否與圖一致，用下面四個按鈕作答。<b>獨立轉寫</b>：指定的頁面會以「盲轉寫模式」打開，右側不顯示既有轉寫，只有空白錄文框，請照圖錄文。",
+"help_use_p":"左側是書頁上的一列字，已裁切放大；右側是這一列的既有轉寫。工作分兩種。<b>覆核</b>：看圖判斷右側文字是否與圖一致，用下面四個按鈕作答。<b>獨立轉寫</b>：指定的頁面會以「盲轉寫模式」打開，右側不顯示既有轉寫，只有空白錄文框，請照圖錄文。",
 "help_h_btn":"四個按鈕",
 "help_btn1":"<b>一致</b>：文字與圖完全相同。按一下（或按 Enter）即記錄，按鈕隨即填色；確認後再按「下一列」。",
 "help_btn2":"<b>不一致</b>：把文字改成與圖相同。<b>一切以圖為準</b>：圖上是「峯」就寫「峯」，改成「峰」即為錯錄。缺筆字、俗寫等字形，錄入它所代表的通行字。若認得是哪個字，但這個字本身用輸入法打不出，或者字跡看不清，請用 □ 代表無法辨認，〓 代表通行輸入法沒有收錄。",
@@ -593,7 +593,7 @@ const I18N = {
 "btn_prev_page":"← 上一页","btn_next_undone":"下一张未完成 →","btn_to_list":"回页面清单",
 "revisit_banner":"这一页已经校完了，你现在是在复查。若不打算改动，可以直接按“下一张未完成”。",
 "flip_to_horiz":"改为横排显示","flip_to_vert":"改为竖排显示",
-"zoom_label":"放大","ctx_label":"显示左右邻列（只作参考，红框内才是本列）","exp_line_png":"导出本列影像 PNG",
+"zoom_label":"放大","ctx_label":"显示该列四周（只作参考，红框内才是本列）","exp_line_png":"导出本列影像 PNG",
 "page_img_alt":"整页影像",
 "prog_a":"第 ","prog_b":" 列 / 共 ","prog_c":" 列",
 "ask_line":"这一列的候选文字与影像一致吗？","vtag_unset":"未校",
@@ -616,11 +616,11 @@ const I18N = {
 "fold_label":"旧字形与通行形视为一致（计算 IAA 时建议勾选）",
 "cmp_empty":"载入两份进度文件后，这里会显示字符一致率、分层一致率与分歧列。",
 "help_h_start":"如何开始",
-"help_start_p_fsa":"在“页面清单”点“选择工作资料夹”，选中存放图片与 XML 的资料夹。图片与 XML 依文件名自动配对，清单会标出已经校完的页。再选其他资料夹，它的页面会加进同一份清单。每个判定都即时存在本机；关闭校书台后再打开，会重新载入上次的资料夹（浏览器可能要你先点“重新打开”并允许读取），回到上次停下的那一页。每次收工请点“导出进度 JSON（整本）”，把文件交给项目负责人。",
-"help_start_p":"在“页面清单”点“选择工作资料夹”，选中存放图片与 XML 的资料夹。图片与 XML 依文件名自动配对，清单会标出已经校完的页。再选其他资料夹，它的页面会加进同一份清单。中途可以直接关闭校书台，进度存在本机；下次打开校书台、选同一个资料夹，就能从上次停下的地方继续。每次收工请点“导出进度 JSON（整本）”，把文件交给项目负责人。",
-"help_start_p_desktop":"在“页面清单”点“选择工作资料夹”，选中存放图片与 XML 的资料夹。图片与 XML 依文件名自动配对，清单会标出已经校完的页。再选其他资料夹，它的页面会加进同一份清单。每个判定都即时存在本机；关闭校书台后再打开，会自动重新载入上次的资料夹，回到上次停下的那一页。每次收工请点“导出进度 JSON（整本）”，把文件交给项目负责人。",
+"help_start_p_fsa":"在“页面清单”点“选择工作资料夹”，选中存放图片与 XML 的资料夹。图片与 XML 依文件名自动配对，清单会标出已经校完的页。再选其他资料夹，它的页面会加进同一份清单。每个判定都即时存在本机；关闭校书台后再打开，会重新载入上次的资料夹（浏览器可能要你先点“重新打开”并允许读取），回到上次停下的那一页。勾选字列与转写下方的<b>显示该列四周</b>即可扩大显示范围。每次收工请点“导出进度 JSON（整本）”。",
+"help_start_p":"在“页面清单”点“选择工作资料夹”，选中存放图片与 XML 的资料夹。图片与 XML 依文件名自动配对，清单会标出已经校完的页。再选其他资料夹，它的页面会加进同一份清单。中途可以直接关闭校书台，进度存在本机；下次打开校书台、选同一个资料夹，就能从上次停下的地方继续。勾选字列与转写下方的<b>显示该列四周</b>即可扩大显示范围。每次收工请点“导出进度 JSON（整本）”。",
+"help_start_p_desktop":"在“页面清单”点“选择工作资料夹”，选中存放图片与 XML 的资料夹。图片与 XML 依文件名自动配对，清单会标出已经校完的页。再选其他资料夹，它的页面会加进同一份清单。每个判定都即时存在本机；关闭校书台后再打开，会自动重新载入上次的资料夹，回到上次停下的那一页。勾选字列与转写下方的<b>显示该列四周</b>即可扩大显示范围。每次收工请点“导出进度 JSON（整本）”。",
 "help_h_use":"工具用途",
-"help_use_p":"左侧是书页上的一列字，已裁切放大；右侧是这一列的既有转写。工作分两种，由项目负责人指定。<b>复核</b>：看图判断右侧文字是否与图一致，用下面四个按钮作答。<b>独立转写</b>：指定的页面会以“盲转写模式”打开，右侧不显示既有转写，只有空白录文框，请照图录文。",
+"help_use_p":"左侧是书页上的一列字，已裁切放大；右侧是这一列的既有转写。工作分两种。<b>复核</b>：看图判断右侧文字是否与图一致，用下面四个按钮作答。<b>独立转写</b>：指定的页面会以“盲转写模式”打开，右侧不显示既有转写，只有空白录文框，请照图录文。",
 "help_h_btn":"四个按钮",
 "help_btn1":"<b>一致</b>：文字与图完全相同。按一下（或按 Enter）即记录，按钮随即填色；确认后再按“下一列”。",
 "help_btn2":"<b>不一致</b>：把文字改成与图相同。<b>一切以图为准</b>：图上是“峯”就写“峯”，改成“峰”即为错录。缺笔字、俗写等字形，录入它所代表的通行字。若认得是哪个字，但这个字本身用输入法打不出，或者字迹看不清，请用 □ 代表无法辨认，〓 代表通行输入法没有收录。",
@@ -717,7 +717,7 @@ const I18N = {
 "btn_prev_page":"← Previous page","btn_next_undone":"Next unfinished →","btn_to_list":"Back to list",
 "revisit_banner":"This page is already finished; you are reviewing it. If you do not plan to change anything, just press 'Next unfinished'.",
 "flip_to_horiz":"Switch to horizontal","flip_to_vert":"Switch to vertical",
-"zoom_label":"Zoom","ctx_label":"Show neighbouring lines (reference only; the red frame marks this line)","exp_line_png":"Export this line as PNG",
+"zoom_label":"Zoom","ctx_label":"Show neighbouring area (reference only; the red frame marks this line)","exp_line_png":"Export this line as PNG",
 "page_img_alt":"Full page image",
 "prog_a":"Line ","prog_b":" of ","prog_c":"",
 "ask_line":"Does the candidate text match the image for this line?","vtag_unset":"Unchecked",
@@ -729,7 +729,7 @@ const I18N = {
 "prev_btn":"← Previous line","next_btn":"Next line →",
 "kbd_pre":"Keys: ","kbd_ok":" match　","kbd_nav":" prev / next line　","kbd_save":" save",
 "exp_csv_book":"Export full CSV","exp_json_book":"Export progress JSON (all pages)",
-"empty_hint":"No material yet. Go to 'Pages' and choose the folder with your images and XML.",
+"empty_hint":"No material yet. Go to <b>Pages</b> and choose the folder with your images and XML.",
 "pick_both":"Choose working folder (images and XML together)","pick_img":"Images folder only","pick_xml":"XML folder only","pick_files":"Pick multiple files (no folder)","load_json":"Load progress JSON","clear_prog":"Delete saved progress","clear_pages":"Clear page list",
 "pair_total":"The page list now has {n} page(s).","restored_note":"Reopened the {n} page(s) from last time.","reopen_note":"Your last page list has {n} page(s). The browser needs your permission to read those folders again.","reopen_btn":"Reopen","reopen_denied":"Permission was not given. Click Reopen again, or choose the folders again.","restored_missing":"{n} more page(s) could not be reopened: their image or XML is no longer where it was (moved, renamed or deleted). Choose the folder again.",
 "pl_folder_hint":"Choose a folder; images and XML pair automatically by filename. Mixing them in one folder is fine.",
@@ -740,11 +740,11 @@ const I18N = {
 "fold_label":"Treat old glyph forms and common forms as equal (recommended for IAA)",
 "cmp_empty":"After loading two progress files, this shows character agreement, per-type agreement, and disagreeing lines.",
 "help_h_start":"Getting started",
-"help_start_p_fsa":"In 'Pages', click 'Choose working folder' and select the folder holding your images and XML. Images and XML pair automatically by filename, and the list marks which pages are done. Choosing another folder adds its pages to the same list. Every verdict is saved on this machine as you work; when you close and reopen the app, it reloads your folders (the browser may first ask you to click 'Reopen' and allow access) and returns to the page where you stopped. At the end of each session, click 'Export progress JSON (all pages)' and send the file to the project coordinator.",
-"help_start_p":"In 'Pages', click 'Choose working folder' and select the folder holding your images and XML. Images and XML pair automatically by filename, and the list marks which pages are done. Choosing another folder adds its pages to the same list. You can close the app at any point; progress is saved on this machine. Reopen the app, choose the same folder, and you continue where you stopped. At the end of each session, click 'Export progress JSON (all pages)' and send the file to the project coordinator.",
-"help_start_p_desktop":"In 'Pages', click 'Choose working folder' and select the folder holding your images and XML. Images and XML pair automatically by filename, and the list marks which pages are done. Choosing another folder adds its pages to the same list. Every verdict is saved on this machine as you work; when you quit and reopen the app, it reloads your folders and returns to the page where you stopped. At the end of each session, click 'Export progress JSON (all pages)' and send the file to the project coordinator.",
+"help_start_p_fsa":"In 'Pages', click 'Choose working folder' and select the folder holding your images and XML. Images and XML pair automatically by filename, and the list marks which pages are done. Choosing another folder adds its pages to the same list. Every verdict is saved on this machine as you work; when you close and reopen the app, it reloads your folders (the browser may first ask you to click 'Reopen' and allow access) and returns to the page where you stopped. To see more of the page around the line, tick <b>Show neighbouring area</b> below the line and its transcription. At the end of each session, click 'Export progress JSON (all pages)'.",
+"help_start_p":"In 'Pages', click 'Choose working folder' and select the folder holding your images and XML. Images and XML pair automatically by filename, and the list marks which pages are done. Choosing another folder adds its pages to the same list. You can close the app at any point; progress is saved on this machine. Reopen the app, choose the same folder, and you continue where you stopped. To see more of the page around the line, tick <b>Show neighbouring area</b> below the line and its transcription. At the end of each session, click 'Export progress JSON (all pages)'.",
+"help_start_p_desktop":"In 'Pages', click 'Choose working folder' and select the folder holding your images and XML. Images and XML pair automatically by filename, and the list marks which pages are done. Choosing another folder adds its pages to the same list. Every verdict is saved on this machine as you work; when you quit and reopen the app, it reloads your folders and returns to the page where you stopped. To see more of the page around the line, tick <b>Show neighbouring area</b> below the line and its transcription. At the end of each session, click 'Export progress JSON (all pages)'.",
 "help_h_use":"What the tool does",
-"help_use_p":"On the left is one line from the page, cropped and enlarged. On the right is the existing transcription of that line. There are two kinds of work, assigned by the project coordinator. <b>Review</b>: compare the text with the image and answer with the four buttons below. <b>Independent transcription</b>: the assigned pages open in Blind mode, with the existing transcription hidden and an empty box on the right; type exactly what the image shows.",
+"help_use_p":"On the left is one line from the page, cropped and enlarged. On the right is the existing transcription of that line. There are two kinds of work. <b>Review</b>: compare the text with the image and answer with the four buttons below. <b>Independent transcription</b>: the assigned pages open in Blind mode, with the existing transcription hidden and an empty box on the right; type exactly what the image shows.",
 "help_h_btn":"The four buttons",
 "help_btn1":"<b>Match</b>: the text is identical to the image. Click it (or press Enter) to record it, and the button fills in; then click 'Next line'.",
 "help_btn2":"<b>Mismatch</b>: change the text to match the image. <b>The image is always the standard</b>: if the image shows 峯, write 峯; changing it to 峰 counts as an error. For forms such as characters with missing strokes or informal variants, enter the standard character they stand for. If you recognise a character but cannot type it, or cannot read it, use □ for a character you cannot read and 〓 for one that common input methods lack.",
