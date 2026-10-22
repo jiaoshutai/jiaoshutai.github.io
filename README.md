@@ -24,7 +24,7 @@
 
 校書臺 is an offline, line-level collation tool. It reads PAGE/ALTO XML exported from eScriptorium together with the matching page images, and shows each line as a cropped, enlarged image beside its transcription, so collators can check it, correct it, or transcribe it independently.
 
-## Your data stays on your computer
+## Data stays on your computer
 
 Images, XML and collation progress are stored on your computer; nothing needs to be uploaded to the web, and no internet connection is needed. Click 'Export progress JSON (all pages)' in the app to export your progress.
 
