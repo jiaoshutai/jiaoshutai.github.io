@@ -1,0 +1,2298 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-palette="ochre">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proofreading Desk: line-level collation</title>
+<meta name="theme-color" content="#5C4510">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<script>try{ document.documentElement.dataset.palette = localStorage.getItem("jiaoshutai_palette") || "ochre"; }catch(e){}</script>
+<style>
+/* ===== palettes (from the design handoff) ===== */
+:root, :root[data-palette="ochre"]{
+  --dk:#916E1C; --lt:#B9D09A; --sh:133,150,111; --ink:#5C4510; --acc:#4A672B;
+  --bg:#F5F6F0; --line:#DCE1D0; --tint:#ECF1E3; --tx:#29261A; --tx2:#575240;
+  --okC:var(--acc); --fixC:var(--dk); /* 一致＝綠，不一致＝赭黃 */
+}
+:root[data-palette="oxblood"]{
+  --dk:#662B1F; --lt:#A5D1B5; --sh:119,150,130; --ink:#662B1F; --acc:#2C6744;
+  --bg:#F2F6F3; --line:#D3E0D7; --tint:#E5F0E9; --tx:#2A1E1B; --tx2:#574843;
+  --okC:var(--acc); --fixC:var(--ink); /* 一致＝綠，不一致＝赭紅 */
+}
+:root[data-palette="slate"]{
+  --dk:#567A83; --lt:#D8B2B2; --sh:156,128,128; --ink:#36535A; --acc:#8A4646;
+  --bg:#F8F4F4; --line:#E6D9D9; --tint:#F3E8E8; --tx:#1F2A2D; --tx2:#4A575B;
+  --okC:var(--ink); --fixC:var(--acc);
+}
+:root{
+  --mid:color-mix(in oklab, var(--dk) 72%, var(--lt));
+  --shadow:0 18px 40px -16px rgba(var(--sh),.55), 0 3px 10px -2px rgba(var(--sh),.18);
+  --shadowSm:0 6px 16px -8px rgba(var(--sh),.5);
+  --ink2:var(--tx2); /* name used by script-generated markup */
+  /* fixed in every palette: referenced by the help text */
+  --red:#B3261E; --green:#2F6B46; --amber:#8A5A0A; --reading:#FFFFFF;
+  --sans:'Inter','Noto Sans TC','Noto Sans SC',sans-serif;
+  --serif:'Noto Serif TC','Songti TC','STSong',serif;
+  --body:'LXGW WenKai TC','FangSong','STFangsong',serif;
+}
+:root[lang="en"]{ --body:'Newsreader','LXGW WenKai TC',Georgia,serif; }
+
+*{box-sizing:border-box; margin:0; padding:0}
+/* ===== app shell: the window never scrolls; only .scroller does =====
+   html/body are locked so macOS rubber-banding has nothing to move; their
+   background is the header ink, so any edge that flashes shows header colour. */
+html, body{height:100%; overflow:hidden; overscroll-behavior:none; overscroll-behavior-x:none; background:var(--ink)}
+body{color:var(--tx); font-family:var(--sans); font-size:16px; line-height:1.65; font-weight:400}
+textarea, input, button{font-family:inherit}
+.serif{font-family:var(--serif)}
+.hidden{display:none !important}
+.app{position:relative; height:100vh; height:100dvh; display:grid; grid-template-rows:auto auto minmax(0,1fr);
+  overflow:hidden; background:var(--bg)}
+.scroller{min-height:0; overflow-x:hidden; overflow-y:auto; overscroll-behavior:none; outline:none}
+
+/* ===== header ===== */
+header{display:flex; align-items:center; gap:24px; flex-wrap:wrap; padding:18px 28px; color:#fff;
+  background:linear-gradient(100deg, var(--ink) 0%, var(--dk) 48%, var(--lt) 100%)}
+.brand{display:flex; flex-direction:column; gap:2px; min-width:0}
+.brandRow{display:flex; align-items:baseline; gap:12px}
+header h1{display:flex; gap:.18em; font-family:var(--serif); font-weight:600; font-size:30px; line-height:1.3; color:#fff}
+header h1 b{font-weight:600; color:var(--lt); text-decoration:underline; text-decoration-color:var(--lt);
+  text-decoration-thickness:3px; text-underline-offset:6px} /* 各配色的淺色：草綠／綠／粉 */
+.logoEn{font-size:15px; font-weight:600; color:#fff}
+.logoEn b{font-weight:inherit}
+:root:not([lang="en"]) .logoEn{display:none}
+.hdrRight{margin-left:auto; display:flex; align-items:center; gap:12px; color:var(--tx)}
+.hdrRight label{font-size:14px; font-weight:600; color:var(--tx)}
+.hdrRight input{font-size:15px; padding:8px 12px; width:130px; border:1px solid rgba(255,255,255,.7);
+  background:rgba(255,255,255,.92); border-radius:5px; color:var(--tx); box-shadow:var(--shadowSm); outline:none}
+.palSwitch{display:flex; align-items:center; gap:6px; padding:5px; background:rgba(255,255,255,.55);
+  border-radius:4px; box-shadow:var(--shadowSm)}
+.palDot{width:24px; height:24px; border-radius:50%; border:none; padding:0; cursor:pointer}
+.palDot[data-pal="ochre"]{background:linear-gradient(135deg, #916E1C, #B9D09A)}
+.palDot[data-pal="oxblood"]{background:linear-gradient(135deg, #662B1F, #A5D1B5)}
+.palDot[data-pal="slate"]{background:linear-gradient(135deg, #567A83, #D8B2B2)}
+.palDot.cur[data-pal="ochre"]{box-shadow:0 0 0 2px #fff, 0 0 0 4px #916E1C}
+.palDot.cur[data-pal="oxblood"]{box-shadow:0 0 0 2px #fff, 0 0 0 4px #662B1F}
+.palDot.cur[data-pal="slate"]{box-shadow:0 0 0 2px #fff, 0 0 0 4px #567A83}
+.hdrRight .btn{font-size:14px; padding:8px 14px; border-color:rgba(255,255,255,.7); background:rgba(255,255,255,.92)}
+
+/* ===== tabs ===== */
+nav.tabs{display:flex; gap:4px; flex-wrap:wrap; padding:0 28px; background:#fff; border-bottom:1px solid var(--line)}
+nav.tabs button{position:relative; font-size:16px; padding:13px 20px; border:none; background:none;
+  cursor:pointer; color:var(--tx2); font-weight:400}
+nav.tabs button::after{content:""; position:absolute; left:14px; right:14px; bottom:-1px; height:3px;
+  border-radius:2px 2px 0 0; background:linear-gradient(90deg, var(--dk), var(--lt)); opacity:0}
+nav.tabs button.on{color:var(--ink); font-weight:600}
+nav.tabs button.on::after{opacity:1}
+
+main{padding:24px 28px 28px; max-width:1280px; margin:0 auto; font-family:var(--body)}
+
+/* ===== buttons ===== */
+.btn{display:inline-block; font-size:15px; padding:9px 15px; border:1px solid var(--line); background:#fff;
+  border-radius:5px; cursor:pointer; color:var(--tx); box-shadow:var(--shadowSm);
+  transition:transform .18s ease, box-shadow .18s ease}
+.btn:hover{transform:translateY(-2px); box-shadow:inset 0 0 14px rgba(255,255,255,.55), inset 0 0 0 1px var(--lt), var(--shadow)}
+.btn:active{transform:translateY(0); box-shadow:var(--shadowSm); transition-duration:.08s}
+.btn:focus-visible{outline:3px solid var(--dk); outline-offset:2px}
+.btn.primary{border:none; color:#fff; font-weight:700; box-shadow:var(--shadow);
+  background:linear-gradient(120deg, var(--ink), var(--dk) 60%, var(--mid))}
+.btn.primary:hover{box-shadow:inset 0 0 14px rgba(255,255,255,.35), inset 0 0 0 1px var(--lt), var(--shadow)}
+.btn.primary:active{box-shadow:var(--shadowSm)}
+.btn.small{font-size:14px; padding:7px 13px}
+.btn.big{font-size:20px; padding:16px 10px; width:100%; border-width:1.5px; border-radius:6px}
+.btn.ok{border-color:var(--okC); color:var(--okC); font-weight:700}
+.btn.fix{border-color:var(--fixC); color:var(--fixC); font-weight:700}
+/* 已判定：按鈕以邊框色的淺色填滿 */
+#panelV[data-v="ok"] #vOk{background:color-mix(in srgb, var(--okC) 18%, #fff)}
+#panelV[data-v="fix"] #vFix{background:color-mix(in srgb, var(--fixC) 18%, #fff)}
+#panelV[data-v="blur"] #vBlur, #panelV[data-v="flag"] #vFlag, #panelV[data-issue="1"] #vFlag{background:var(--tint)}
+
+.filebar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px}
+.filebar .note{flex:1 1 360px; color:var(--tx2); font-size:14px}
+.filebar > label:not(.btn){display:flex; align-items:center; gap:8px; font-size:15px}
+input[type=checkbox]{accent-color:var(--dk); width:16px; height:16px}
+input[type=range]{accent-color:var(--dk)}
+
+/* ===== 逐列校對 ===== */
+.pagebar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px; padding:12px 16px;
+  background:#fff; border-radius:8px; box-shadow:var(--shadow)}
+.pagebar .name{font-size:18px}
+.pagebar .name b{font-weight:700; color:var(--ink)}
+.pagebar .pill{font-size:13px; padding:2px 10px; border:none; border-radius:4px; background:var(--tint);
+  color:var(--tx2); font-variant-numeric:tabular-nums}
+/* 桌面版的「本頁盲轉寫」開關（PWA 沒有）：選中時以淺色實底填滿 */
+.btn.blindToggle{border-color:var(--acc); color:var(--acc); font-weight:700}
+.btn.blindToggle:hover{background:color-mix(in srgb, var(--acc) 7%, #fff)}
+.btn.blindToggle.on{background:color-mix(in srgb, var(--acc) 22%, #fff)}
+.saveNote{margin-left:auto; font-size:13px; color:var(--acc); font-variant-numeric:tabular-nums}
+#reopenBar{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+/* 刪除進度：與其他按鈕隔開，放在最右，紅字 */
+.filebar .btn.danger{margin-left:auto; color:var(--red)}
+.banner{padding:11px 16px; border-radius:5px; margin-bottom:16px; font-size:15px}
+.banner.warn{background:#FBF4E2; border:1px solid #E2CF9A; color:#6F5510}
+.banner.ok{background:#EEF4EF; border:1px solid #BCD4C3; color:var(--green)}
+.stage{display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:24px}
+@media (max-width:980px){ .stage{grid-template-columns:minmax(0,1fr)} }
+.stage > div:first-child{min-width:0}
+.compareBox{display:flex; gap:24px; justify-content:center; align-items:center;
+  background:#fff; border-radius:8px; padding:20px 18px; box-shadow:var(--shadow)}
+.zoomWrap, .colWrap{max-height:520px; overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; overscroll-behavior:contain}
+.zoomWrap{border-radius:4px; background:var(--reading); box-shadow:inset 0 0 0 1px var(--line)}
+.zoomWrap canvas{display:block; margin:0 auto}
+.colCol{display:flex; flex-direction:column; align-items:center; gap:10px}
+.colText{writing-mode:vertical-rl; text-orientation:upright; font-family:var(--serif); font-size:34px;
+  letter-spacing:.28em; line-height:1.5; padding:8px 12px; color:var(--tx);
+  border-left:4px solid var(--red); background:var(--reading)}
+.colText.horiz{writing-mode:horizontal-tb; border-left:none; border-bottom:4px solid var(--red);
+  letter-spacing:.18em; max-width:300px}
+.zoomTools{display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:14px; font-size:14px; color:var(--tx2)}
+.zoomTools label{display:flex; align-items:center; gap:8px}
+.zoomTools input[type=range]{width:130px}
+#zoomPct{font-variant-numeric:tabular-nums; min-width:40px}
+.locator{margin-top:14px; position:relative; border-radius:6px; overflow:hidden; line-height:0;
+  background:var(--reading); box-shadow:inset 0 0 0 1px var(--line), var(--shadow)}
+.locator img{display:block; width:100%}
+.locator svg{position:absolute; left:0; top:0; width:100%; height:100%}
+.locator .lp{fill:color-mix(in oklab, var(--dk) 4%, transparent); stroke:color-mix(in oklab, var(--dk) 40%, transparent);
+  stroke-width:1; vector-effect:non-scaling-stroke; cursor:pointer}
+.locator .lp.done{fill:rgba(47,107,70,.14); stroke:var(--green); stroke-width:1.5}
+.locator .lp.on{fill:rgba(179,38,30,.16); stroke:var(--red); stroke-width:3}
+.meta{margin-top:12px; display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-size:14px;
+  color:var(--tx2); font-variant-numeric:tabular-nums}
+.typeTag{display:inline-block; font-size:13px; padding:2px 11px; border-radius:4px; border:1px solid var(--dk); color:var(--ink)}
+.typeTag.fig{border-color:var(--amber); color:var(--amber)}
+.hintLine{margin-top:10px; font-size:15px; color:var(--tx2); background:#fff; padding:10px 14px;
+  border-radius:5px; box-shadow:var(--shadowSm)}
+.panel{background:#fff; border-radius:8px; padding:22px; box-shadow:var(--shadow); align-self:start}
+.progress{display:flex; align-items:center; gap:14px; margin-bottom:18px}
+.progress .pageno{font-size:19px; font-variant-numeric:tabular-nums; white-space:nowrap}
+.progress .pageno b{color:var(--ink); font-size:24px; font-weight:700}
+.bar{flex:1; height:8px; background:var(--tint); border-radius:4px; overflow:hidden}
+.bar i{display:block; height:100%; width:0%; border-radius:4px; background:linear-gradient(90deg, var(--dk), var(--lt))}
+#doneNo{font-size:14px; color:var(--tx2); font-variant-numeric:tabular-nums; text-align:right}
+.askLine{font-size:19px; display:flex; align-items:center; flex-wrap:wrap; gap:10px}
+.verdictTag{display:inline-block; font-size:14px; padding:2px 12px; border-radius:4px; border:1px solid var(--line); color:var(--tx2)}
+.verdictTag[data-v="ok"]{border-color:var(--okC); color:var(--okC); font-weight:700}
+.verdictTag[data-v="fix"], .verdictTag[data-v="trans"]{border-color:var(--fixC); color:var(--fixC); font-weight:700}
+.verdictTag[data-v="blur"], .verdictTag[data-v="flag"]{border-color:var(--tx2); color:var(--tx2); font-weight:700}
+.prompt{font-size:15px; color:var(--tx2)}
+#transWrap{margin-top:14px}
+#transSave, #fixSave, #flagSave{font-size:16px; padding:10px 18px}
+#fixWrap, #flagWrap{margin-bottom:6px}
+.verdicts{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:18px 0}
+.editArea{display:block; width:100%; font-family:var(--serif); font-size:26px; padding:12px; margin:8px 0;
+  border:2px solid var(--fixC); border-radius:5px; min-height:64px; color:var(--tx); outline:none}
+textarea.noteArea{display:block; width:100%; font-size:16px; padding:10px 12px; min-height:54px; margin:8px 0;
+  border:1px solid var(--line); border-radius:5px; color:var(--tx); outline:none}
+#lineNote{margin:8px 0 0; background:var(--bg)}
+.navRow{display:flex; gap:12px; margin-top:16px}
+.navRow .btn{flex:1; font-size:18px; padding:13px; border-radius:6px}
+.editRow{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.insBtns{margin-left:auto; display:flex; gap:8px}
+.insBtns .btn{font-family:var(--serif)}
+.kbdIns{margin-left:4px}
+/* 盲轉寫頁沒有「一致」；鎖定的頁也沒有錄文框 */
+#panelV[data-mode="blind"] .kOk, #panelV[data-mode="locked"] .kOk, #panelV[data-mode="locked"] .kIns{display:none}
+kbd.insKey{margin-left:10px}
+.kbd{display:flex; align-items:center; flex-wrap:wrap; gap:4px; font-size:13px; color:var(--tx2); margin-top:14px}
+kbd{font-family:'Inter',sans-serif; font-size:12px; border:1px solid var(--line); border-radius:3px; padding:0 6px; background:var(--bg)}
+.exports{margin-top:18px; padding-top:16px; border-top:1px solid var(--line); display:flex; gap:10px; flex-wrap:wrap}
+
+/* ===== tables, pills ===== */
+table.grid{width:100%; border-collapse:separate; border-spacing:0; background:#fff; border-radius:8px;
+  overflow:clip; box-shadow:var(--shadow); overscroll-behavior:contain}
+table.grid th, table.grid td{padding:10px 14px; text-align:left; vertical-align:top}
+table.grid th{font-size:14px; font-weight:700; color:var(--tx2); background:var(--tint); white-space:nowrap; position:sticky; top:0}
+table.grid td{border-top:1px solid var(--line); font-size:15px; font-variant-numeric:tabular-nums}
+table.grid td.serif{white-space:nowrap}
+#cmpOut table.grid td.serif:nth-child(n+4){font-size:18px; letter-spacing:.06em; white-space:normal}
+table.grid td:last-child .btn{font-size:14px; padding:6px 12px}
+#pageListOut table.grid td:last-child{text-align:right}
+table.grid tr.doneRow td{background:#F2F7F3}
+.pill{display:inline-block; font-size:13px; padding:1px 9px; border-radius:4px; border:1px solid var(--line);
+  color:var(--tx2); background:#fff; white-space:nowrap}
+.pill.done{border-color:var(--green); color:var(--green); background:#EAF3EC; font-weight:700}
+.pill.part{border-color:var(--amber); color:var(--amber); background:#FBF3E3}
+.pill.blind{border-color:var(--acc); color:var(--acc); margin-left:8px; font-family:inherit}
+.pill.err{border-color:var(--red); color:var(--red); background:#FBEDEB; font-weight:700}
+.agree{font-size:21px; margin:6px 0 16px}
+.agree b{font-weight:700; color:var(--ink)}
+.empty{padding:64px 24px; margin-top:8px; text-align:center; color:var(--tx2); font-size:18px;
+  background:#fff; border-radius:8px; box-shadow:var(--shadow)}
+
+/* ===== 使用說明 ===== */
+.helpWrap{position:relative; display:flex; gap:24px; align-items:stretch}
+.help{position:relative; z-index:1; flex:0 1 840px; min-width:0; background:#fff; border-radius:8px;
+  padding:28px 34px 32px; font-size:18px; line-height:2; box-shadow:var(--shadow)}
+.help h2{margin:22px 0 6px; font-size:21px; font-weight:700; line-height:1.5; color:var(--ink)}
+.help h2:first-child{margin-top:0}
+.help b{font-weight:700; color:var(--ink)}
+.help ul{list-style:none}
+.help li{position:relative; padding-left:24px; text-wrap:pretty}
+.help li::before{content:"·"; position:absolute; left:8px; color:var(--dk)}
+.help .glyph{font-family:var(--serif); font-size:1.1em}
+.bronze{position:absolute; z-index:0; top:-24px; bottom:-8px; left:730px; right:-200px; pointer-events:none;
+  -webkit-mask:linear-gradient(90deg, transparent 0%, #000 24%, #000 54%, transparent 76%), linear-gradient(180deg, transparent 0%, #000 12%, #000 86%, transparent 100%);
+  -webkit-mask-composite:source-in;
+  mask:linear-gradient(90deg, transparent 0%, #000 24%, #000 54%, transparent 76%), linear-gradient(180deg, transparent 0%, #000 12%, #000 86%, transparent 100%);
+  mask-composite:intersect}
+.bronze div{width:100%; height:100%; opacity:.9; background:linear-gradient(180deg, var(--dk) 0%, var(--dk) 35%, var(--lt) 100%);
+  -webkit-mask-image:url("bronze-mask.png"); -webkit-mask-position:center; -webkit-mask-size:auto 106%; -webkit-mask-repeat:no-repeat;
+  mask-image:url("bronze-mask.png"); mask-position:center; mask-size:auto 106%; mask-repeat:no-repeat}
+
+@media (prefers-reduced-motion: no-preference){ .bar i{transition:width .25s} }
+
+/* ===== language modal ===== */
+.langModal{position:fixed; inset:0; background:rgba(30,28,26,.45); display:none;
+  justify-content:center; align-items:flex-start; padding-top:240px; z-index:1000}
+.langModal.show{display:flex}
+.langBox{background:#fff; border-radius:8px; padding:28px 32px; min-width:320px; text-align:center;
+  box-shadow:0 30px 70px -20px rgba(20,18,16,.45), var(--shadow); font-family:var(--body)}
+.langBox:focus{outline:none}
+.langTitle{font-size:18px; color:var(--tx2); margin-bottom:18px}
+.langList{display:flex; flex-direction:column; gap:10px}
+.langOpt{font-size:19px; padding:13px 18px; border:1.5px solid var(--line); background:#fff; border-radius:6px;
+  cursor:pointer; color:var(--tx); box-shadow:var(--shadowSm); font-family:'LXGW WenKai TC',serif}
+.langOpt[data-lang="en"]{font-family:'Newsreader',Georgia,serif}
+.langOpt.cur{border-color:var(--dk); color:var(--ink); font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">
+    <div class="brandRow">
+      <h1><span>校</span><b>書</b><span>臺</span></h1>
+      <span class="logoEn" data-i18n-html="logo">Proof<b>reading</b> Desk</span>
+    </div>
+  </div>
+  <div class="hdrRight">
+    <label for="who" data-i18n="annotator_label">校對者</label>
+    <input id="who" data-i18n-ph="annotator_ph" placeholder="校對者姓名">
+    <div class="palSwitch">
+      <button class="palDot" data-pal="ochre"></button>
+      <button class="palDot" data-pal="oxblood"></button>
+      <button class="palDot" data-pal="slate"></button>
+    </div>
+    <button class="btn small" id="langBtn" data-i18n="lang_btn">語言</button>
+  </div>
+</header>
+<nav class="tabs">
+  <button id="tabA" class="on" data-i18n="tab_A">逐列校對</button>
+  <button id="tabP" data-i18n="tab_P">頁面清單</button>
+  <button id="tabQ" data-i18n="tab_Q">資料自檢</button>
+  <button id="tabC" data-i18n="tab_C">兩人對照</button>
+  <button id="tabH" data-i18n="tab_H">使用說明</button>
+</nav>
+<div class="scroller" id="scroller" tabindex="-1">
+<main>
+
+<!-- ==================== 逐列校對 ==================== -->
+<section id="paneA">
+  <div id="workArea" class="hidden">
+  <div class="pagebar">
+    <span class="name"><span data-i18n="cur_page">當前頁：</span><b id="pgName">—</b></span>
+    <span class="pill" id="pgPos"></span>
+    <button class="btn small" id="btnPrevPage" data-i18n="btn_prev_page">← 上一頁</button>
+    <button class="btn small" id="btnNextUndone" data-i18n="btn_next_undone">下一張未完成 →</button>
+    <button class="btn small" id="btnToList" data-i18n="btn_to_list">回頁面清單</button>
+    <span class="saveNote" id="saveNote"></span>
+  </div>
+  <div id="blindBanner" class="banner warn hidden"></div>
+  <div id="revisitBanner" class="banner warn hidden" data-i18n="revisit_banner">這一頁已經校完了，你現在是在複查。若不打算改動，可以直接按「下一張未完成」。</div>
+  <div class="stage">
+    <div>
+      <div class="compareBox">
+        <div class="zoomWrap" id="zoomWrap"><canvas id="zoomCanvas"></canvas></div>
+        <div class="colCol">
+          <div class="colWrap" id="colWrap"><div class="colText" id="colText"></div></div>
+          <button class="btn small" id="flip" data-i18n="flip_to_horiz">改為橫排顯示</button>
+        </div>
+      </div>
+      <div class="zoomTools">
+        <label><span data-i18n="zoom_label">放大</span><input type="range" id="zoomRange" min="100" max="400" step="10" value="100"></label>
+        <span id="zoomPct">100%</span>
+        <label><input type="checkbox" id="ctxOn"><span data-i18n="ctx_label">顯示該列四周（只作參考，紅框內才是本列）</span></label>
+        <button class="btn small" id="expLinePng" data-i18n="exp_line_png">導出本列影像 PNG</button>
+      </div>
+      <div class="locator" id="locator"><img id="pageImg" data-i18n-alt="page_img_alt" alt="整頁影像"><svg id="locSvg" preserveAspectRatio="none"></svg></div>
+      <div class="meta" id="lineMeta"></div>
+      <div class="hintLine" id="typeHint"></div>
+    </div>
+    <div class="panel" id="panelV">
+      <div class="progress">
+        <span class="pageno"><span data-i18n="prog_a">第 </span><b id="curNo">1</b><span data-i18n="prog_b"> 列 / 共 </span><span id="totNo">0</span><span data-i18n="prog_c"> 列</span></span>
+        <div class="bar"><i id="barFill"></i></div>
+        <span id="doneNo"></span>
+      </div>
+      <div class="askLine" id="askLine"><span data-i18n="ask_line">這一列的候選文字與影像一致嗎？</span><span class="verdictTag" id="vTag" data-i18n="vtag_unset">未校</span></div>
+      <div id="transWrap" class="hidden">
+        <div class="prompt" data-i18n="trans_prompt">這一列尚無候選文字。請照圖錄文（圖上刻什麼錄什麼）：</div>
+        <textarea class="editArea" id="transText"></textarea>
+        <div class="editRow">
+          <button class="btn primary" id="transSave" data-i18n="trans_save">確認錄文</button>
+          <span class="insBtns"><button class="btn small" data-ins="□" data-i18n="ins_box">插入 □</button><button class="btn small" data-ins="〓" data-i18n="ins_geta">插入 〓</button></span>
+        </div>
+      </div>
+      <div class="verdicts">
+        <button class="btn big ok" id="vOk" data-i18n="v_ok">✓ 一致（正確）</button>
+        <button class="btn big fix" id="vFix" data-i18n="v_fix">✎ 不一致（修改）</button>
+        <button class="btn big" id="vBlur" data-i18n="v_blur">▨ 整列不可辨</button>
+        <button class="btn big" id="vFlag" data-i18n="v_flag">⚠ 異常反饋</button>
+      </div>
+      <div id="fixWrap" class="hidden">
+        <div class="prompt" data-i18n="fix_prompt">請改成與影像一致的文字（照錄字形；看不清的字錄 □，打不出的字錄 〓）：</div>
+        <textarea class="editArea" id="fixText"></textarea>
+        <div class="editRow">
+          <button class="btn primary" id="fixSave" data-i18n="fix_save">確認修改</button>
+          <span class="insBtns"><button class="btn small" data-ins="□" data-i18n="ins_box">插入 □</button><button class="btn small" data-ins="〓" data-i18n="ins_geta">插入 〓</button></span>
+        </div>
+      </div>
+      <div id="flagWrap" class="hidden">
+        <div class="prompt" data-i18n="flag_prompt">說明異常情況（如：紅框嚴重偏移或略有偏移、夾註被拆錯、使用說明沒有提到的版面）：</div>
+        <textarea class="noteArea" id="flagText"></textarea>
+        <button class="btn primary" id="flagSave" data-i18n="flag_save">提交反饋</button>
+      </div>
+      <textarea class="noteArea" id="lineNote" data-i18n-ph="note_ph" placeholder="備註（可不填）"></textarea>
+      <div class="navRow">
+        <button class="btn" id="prevBtn" data-i18n="prev_btn">← 上一列</button>
+        <button class="btn primary" id="nextBtn" data-i18n="next_btn">下一列 →</button>
+      </div>
+      <div class="kbd"><span data-i18n="kbd_pre">鍵盤：</span><kbd class="kOk">Enter</kbd><span class="kOk" data-i18n="kbd_ok"> 一致　</span><kbd>←</kbd><kbd>→</kbd><span data-i18n="kbd_nav"> 前後列　</span><kbd>⌘/Ctrl+S</kbd><span data-i18n="kbd_save"> 存檔</span><kbd class="insKey kIns">⌥/Alt+1</kbd><span class="kbdIns kIns" data-i18n="ins_box">插入 □</span><kbd class="insKey kIns">⌥/Alt+2</kbd><span class="kbdIns kIns" data-i18n="ins_geta">插入 〓</span></div>
+      <div class="exports">
+        <button class="btn" id="expCsvBook" data-i18n="exp_csv_book">導出整本 CSV</button>
+        <button class="btn" id="expJsonBook" data-i18n="exp_json_book">導出進度 JSON（整本）</button>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="empty" id="emptyHint"><span data-i18n-html="empty_hint">還沒有材料。請到「頁面清單」選擇存放圖片與 XML 的資料夾。</span></div>
+</section>
+
+<!-- ==================== 頁面清單 ==================== -->
+<section id="paneP" class="hidden">
+  <div class="filebar">
+    <label class="btn primary"><span data-i18n="pick_both">選擇工作資料夾（圖片與 XML 放一起）</span>
+      <input type="file" id="dirBoth" webkitdirectory directory multiple class="hidden"></label>
+    <label class="btn"><span data-i18n="pick_img">只選圖片資料夾</span><input type="file" id="dirImg" webkitdirectory directory multiple class="hidden"></label>
+    <label class="btn"><span data-i18n="pick_xml">只選 XML 資料夾</span><input type="file" id="dirXml" webkitdirectory directory multiple class="hidden"></label>
+    <label class="btn"><span data-i18n="pick_files">選多個檔案（不用資料夾）</span><input type="file" id="filesAny" multiple class="hidden"></label>
+    <label class="btn"><span data-i18n="load_json">載入進度 JSON</span><input type="file" id="resumeFile" accept=".json" class="hidden"></label>
+    <button class="btn" id="clearPages" data-i18n="clear_pages">清空頁面清單</button>
+    <button class="btn danger" id="clearProg" data-i18n="clear_prog">刪除本機校對進度</button>
+  </div>
+  <div id="reopenBar" class="banner ok hidden"><span id="reopenText"></span><button class="btn small" id="reopenBtn" data-i18n="reopen_btn">重新開啟</button></div>
+  <div id="pairNote" class="banner ok hidden"></div>
+  <div id="pageListOut" class="empty" data-i18n="pl_folder_hint">選一個資料夾，圖片與 XML 會依檔名自動配對。同一個資料夾裡混放也可以。</div>
+</section>
+
+<!-- ==================== 資料自檢 ==================== -->
+<section id="paneQ" class="hidden">
+  <div class="filebar">
+    <button class="btn primary" id="runAudit" data-i18n="run_audit">檢查全部頁面</button>
+    <button class="btn" id="expAudit" data-i18n="exp_audit">導出自檢報告 CSV</button>
+    <span class="note" data-i18n="audit_note">檢查 base seg 在列層級是否可用：多邊形是否退化、列是否落在區域外、是否有疑似併列或重複框、類型字串是否在本體之內。</span>
+  </div>
+  <div id="auditOut" class="empty" data-i18n="audit_empty">尚未執行檢查。</div>
+</section>
+
+<!-- ==================== 兩人對照 ==================== -->
+<section id="paneC" class="hidden">
+  <div class="filebar">
+    <label class="btn"><span data-i18n="load_A">載入 校對者A 的進度 JSON</span><input type="file" id="cmpA" accept=".json" class="hidden"></label>
+    <label class="btn" id="cmpBLabel"><span data-i18n="load_B">載入 校對者B 的進度 JSON</span><input type="file" id="cmpB" accept=".json" class="hidden"></label>
+    <button class="btn" id="expDis" data-i18n="exp_dis">導出分歧 CSV</button>
+    <label><input type="checkbox" id="foldOn" checked><span data-i18n="fold_label">舊字形與通行形視為一致（計算 IAA 時建議勾選）</span></label>
+    <label><input type="checkbox" id="cmpFolder"><span data-i18n="cmp_folder_label">與資料夾的既有轉寫對照（只比 A 的盲轉寫列，即 IAA）</span></label>
+  </div>
+  <div id="cmpOut" class="empty" data-i18n="cmp_empty">載入兩份進度文件後，這裡會顯示字符一致率、分層一致率與分歧列。</div>
+</section>
+
+<!-- ==================== 說明 ==================== -->
+<section id="paneH" class="hidden">
+  <div class="helpWrap">
+  <div class="help">
+    <h2 data-i18n="help_h_start">如何開始</h2>
+    <div id="helpStart" data-i18n-html="help_start_p"></div>
+    <h2 data-i18n="help_h_use">工具用途</h2>
+    <div data-i18n-html="help_use_p"></div>
+    <h2 data-i18n="help_h_btn">四個按鈕</h2>
+    <ul><li data-i18n-html="help_btn1"></li>
+    <li data-i18n-html="help_btn2"></li>
+    <li data-i18n-html="help_btn3"></li>
+    <li data-i18n-html="help_btn4"></li></ul>
+    <h2 data-i18n="help_h_three">四種列</h2>
+    <ul><li data-i18n-html="help_three1"></li>
+    <li data-i18n-html="help_three2"></li>
+    <li data-i18n-html="help_three3"></li>
+    <li data-i18n-html="help_three4"></li></ul>
+    <h2 data-i18n="help_h_sym">特殊符號</h2>
+    <ul><li data-i18n-html="help_sym1"></li>
+    <li data-i18n-html="help_sym2"></li>
+    <li data-i18n-html="help_sym3"></li></ul>
+    <h2 data-i18n="help_h_two">兩條提醒</h2>
+    <ul><li data-i18n-html="help_two1"></li>
+    <li data-i18n-html="help_two2"></li></ul>
+  </div>
+  <div class="bronze" aria-hidden="true"><div></div></div>
+  </div>
+</section>
+</main>
+</div>
+</div>
+<div id="langModal" class="langModal">
+  <div class="langBox" tabindex="-1">
+    <div class="langTitle" data-i18n="lang_modal_title">語言 · 语言 · Language</div>
+    <div class="langList">
+      <button class="langOpt" data-lang="en">English</button>
+      <button class="langOpt" data-lang="zh-Hant">繁體中文</button>
+      <button class="langOpt" data-lang="zh-Hans">简体中文</button>
+    </div>
+  </div>
+</div>
+<script>
+"use strict";
+
+/* ============ i18n ============ */
+const I18N = {
+"zh-Hant": {
+"doc_title":"Proofreading Desk: line-level collation",
+"logo":"校<b>書</b>臺",
+"annotator_label":"校對者",
+"annotator_ph":"校對者姓名",
+"lang_btn":"語言",
+"tab_A":"逐列校對","tab_P":"頁面清單","tab_Q":"資料自檢","tab_C":"兩人對照","tab_H":"使用說明",
+"cur_page":"當前頁：",
+"btn_prev_page":"← 上一頁","btn_next_undone":"下一張未完成 →","btn_to_list":"回頁面清單",
+"revisit_banner":"這一頁已經校完了，你現在是在複查。若不打算改動，可以直接按「下一張未完成」。",
+"flip_to_horiz":"改為橫排顯示","flip_to_vert":"改為豎排顯示",
+"zoom_label":"放大","ctx_label":"顯示該列四周（只作參考，紅框內才是本列）","exp_line_png":"導出本列影像 PNG",
+"page_img_alt":"整頁影像",
+"prog_a":"第 ","prog_b":" 列 / 共 ","prog_c":" 列",
+"ask_line":"這一列的候選文字與影像一致嗎？","vtag_unset":"未校",
+"trans_prompt":"這一列尚無候選文字。請照圖錄文（圖上刻什麼錄什麼）：","trans_save":"確認錄文",
+"v_ok":"✓ 一致（正確）","v_fix":"✎ 不一致（修改）","v_blur":"▨ 整列不可辨","v_flag":"⚠ 異常反饋",
+"fix_prompt":"請改成與影像一致的文字（照錄字形；看不清的字錄 □，打不出的字錄 〓）：","fix_save":"確認修改",
+"flag_prompt":"說明異常情況（如：紅框嚴重偏移或略有偏移、夾註被拆錯、使用說明沒有提到的版面）：","flag_save":"提交反饋",
+"note_ph":"備註（可不填）",
+"prev_btn":"← 上一列","next_btn":"下一列 →",
+"kbd_pre":"鍵盤：","kbd_ok":" 一致　","kbd_nav":" 前後列　","kbd_save":" 存檔",
+"exp_csv_book":"導出整本 CSV","exp_json_book":"導出進度 JSON（整本）",
+"empty_hint":"還沒有材料。請到「頁面清單」選擇存放圖片與 XML 的資料夾。",
+"pick_both":"選擇工作資料夾（圖片與 XML 放一起）","pick_img":"只選圖片資料夾","pick_xml":"只選 XML 資料夾","pick_files":"選多個檔案（不用資料夾）","load_json":"載入進度 JSON","clear_prog":"刪除本機校對進度","clear_pages":"清空頁面清單",
+"pair_total":"頁面清單現共 {n} 頁。","restored_note":"已重新載入上次的 {n} 頁。","reopen_note":"上次的頁面清單有 {n} 頁。瀏覽器要先取得你的允許，才能再次讀取這些資料夾。","reopen_btn":"重新開啟","reopen_denied":"沒有取得讀取權限。可以再按一次「重新開啟」，或重新選擇資料夾。","restored_missing":"另有 {n} 頁的圖片或 XML 已不在原處（可能被移動、改名或刪除），請重新選擇資料夾。",
+"pl_folder_hint":"選一個資料夾，圖片與 XML 會依檔名自動配對。同一個資料夾裡混放也可以。",
+"run_audit":"檢查全部頁面","exp_audit":"導出自檢報告 CSV",
+"audit_note":"檢查 base seg 在列層級是否可用：多邊形是否退化、列是否落在區域外、是否有疑似併列或重複框、類型字串是否在本體之內。",
+"audit_empty":"尚未執行檢查。",
+"load_A":"載入 校對者A 的進度 JSON","load_B":"載入 校對者B 的進度 JSON","exp_dis":"導出分歧 CSV",
+"fold_label":"舊字形與通行形視為一致（計算 IAA 時建議勾選）",
+"cmp_empty":"載入兩份進度文件後，這裡會顯示字符一致率、分層一致率與分歧列。",
+"help_h_start":"如何開始",
+"help_start_p":"在「頁面清單」點「選擇工作資料夾」，選中存放圖片與 XML 的資料夾。圖片與 XML 依檔名自動配對，清單會標出已經校完的頁。再選其他資料夾，它的頁面會加進同一份清單。中途可以直接關閉校書臺，進度存在本機；下次打開校書臺、選同一個資料夾，就能從上次停下的地方繼續。勾選字列與轉寫下方的<b>顯示該列四周</b>即可擴大顯示範圍。每次收工請點「導出進度 JSON（整本）」。",
+"help_start_p_fsa":"在「頁面清單」點「選擇工作資料夾」，選中存放圖片與 XML 的資料夾。圖片與 XML 依檔名自動配對，清單會標出已經校完的頁。再選其他資料夾，它的頁面會加進同一份清單。每個判定都即時存在本機；關閉校書臺後再打開，會重新載入上次的資料夾（瀏覽器可能要你先點「重新開啟」並允許讀取），回到上次停下的那一頁。勾選字列與轉寫下方的<b>顯示該列四周</b>即可擴大顯示範圍。每次收工請點「導出進度 JSON（整本）」。",
+"help_start_p_desktop":"在「頁面清單」點「選擇工作資料夾」，選中存放圖片與 XML 的資料夾。圖片與 XML 依檔名自動配對，清單會標出已經校完的頁。再選其他資料夾，它的頁面會加進同一份清單。每個判定都即時存在本機；關閉校書臺後再打開，會自動重新載入上次的資料夾，回到上次停下的那一頁。勾選字列與轉寫下方的<b>顯示該列四周</b>即可擴大顯示範圍。每次收工請點「導出進度 JSON（整本）」。",
+"help_h_use":"工具用途",
+"help_use_p":"左側是書頁上的一列字，已裁切放大；右側是這一列的既有轉寫。工作分兩種。<b>覆核</b>：看圖判斷右側文字是否與圖一致，用下面四個按鈕作答。<b>獨立轉寫</b>：指定的頁面會以「盲轉寫模式」打開，右側不顯示既有轉寫，只有空白錄文框，請照圖錄文。",
+"help_h_btn":"四個按鈕",
+"help_btn1":"<b>一致</b>：文字與圖完全相同。按一下（或按 Enter）即記錄，按鈕隨即填色；確認後再按「下一列」。",
+"help_btn2":"<b>不一致</b>：把文字改成與圖相同。<b>一切以圖為準</b>：圖上是「峯」就寫「峯」，改成「峰」即為錯錄。缺筆字、俗寫等字形，錄入它所代表的通行字。若認得是哪個字，但這個字本身用輸入法打不出，或者字跡看不清，請用 □ 代表無法辨認，〓 代表通行輸入法沒有收錄。",
+"help_btn3":"<b>整列不可辨</b>：整列字跡都無法辨認時才用。只有個別字看不清，請在文字裡用 □。",
+"help_btn4":"<b>異常反饋</b>：紅框嚴重偏移、一列被拆成兩列、兩列被框在一起，或任何使用說明沒有提到的情況，用一句話描述即可。不影響轉寫的小問題（例如紅框略有偏移），照常判「一致」或「不一致」，再在這裡寫明，兩者都會記下。",
+"help_h_three":"四種列",
+"help_three1":"<b>正文列</b>：照圖錄文。",
+"help_three2":"<b>夾註列</b>：正文中間的雙行小字，每個框只應包含其中一列。若一個框裡框進了兩列小字，請用「異常反饋」。",
+"help_three3":"<b>圖上標籤</b>：圖版上零散分佈的地名、星官名、方位、里程等短標。框內的字照順序錄，各標籤之間沒有先後。圖版旁成段的文字（如界至、圖說）屬於正文列，與正文一樣由右至左閱讀；若順序有誤，請用「異常反饋」。",
+"help_h_sym":"特殊符號",
+"help_three4":"<b>題名列</b>：題區內的一列，照圖錄文。",
+"help_sym1":"<b>□ 看不清的字</b>：書上這裡有字，但因漫漶、蟲蛀、缺損或掃描不清而無法辨認，一個字錄一個 □。字形清楚、只是認不出的字，也錄 □，並在備註寫「字形清楚，未能識別」。",
+"help_sym2":"<b>〓 打不出的字</b>：認得是哪個字，但用輸入法打不出（例如新收的生僻字），一個字錄一個 〓，並在備註寫下字形描述，知道碼位的也一併寫上，例如「左土右觜，U+3268F」。即使你能用其他方法輸入該字，也請錄 〓，以免兩人寫法不一。",
+"help_sym3":"錄文框旁的「插入 □」「插入 〓」兩個按鈕可直接插入符號，也可按 ⌥/Alt+1、⌥/Alt+2。",
+"help_h_two":"兩條提醒",
+"help_two1":"書上的朱筆圈點是句讀符號，錄文時略去。",
+"help_two2":"轉錄面板下方頁面原圖可以直接點擊某一列跳轉；綠色表示已經校過。",
+"footer":"校書臺 v0.6 · 單文件離線運行 · 數據只存在本機",
+"lang_modal_title":"語言 · 语言 · Language",
+"region_Main":"正文區","region_Interlinear":"夾註區","region_Figure":"圖區","region_Title":"題區","region_Page":"頁面",
+"line_Main":"正文列","line_Interlinear":"夾註列","line_figureLabel":"圖上標籤","line_figureTitle":"題名列",
+"hint_Main":"正文列：照圖錄文。有獨立字碼的異體字照原樣保留；缺筆、俗寫錄通行字。",
+"hint_Interlinear":"夾註列：正文中間的雙行小字，每個框只應包含其中一列。若一個框裡框進了兩列小字，請用「異常反饋」。",
+"hint_figureLabel":"圖上標籤：圖版上零散的地名、星官名、方位、里程等短標。框內的字照順序錄，各標籤之間沒有先後。",
+"hint_figureTitle":"題名列：題區內的一列，照圖錄文。",
+"verdict_正確":"正確","verdict_修改":"修改","verdict_不可辨":"整列不可辨","verdict_異常":"異常","verdict_轉寫":"轉寫",
+"saved_at":"已存檔 {time}","store_unavail":"本機暫存不可用，請記得導出 JSON",
+"clear_confirm":"要刪除這台電腦上保存的全部校對進度（{n} 列判定）嗎？刪除之前會先自動導出一份備份 JSON。",
+"got_msg":"尚未配對：圖片 {i} 個、XML {x} 個。再選擇對應的資料夾就會自動配對。",
+"pair_head":"配對成功 <b>{n}</b> 頁。","pair_ok":"配對成功 {n} 頁，圖片與 XML 一一對應。",
+"pair_no_xml":"<br>還沒有對應 XML 的圖片 {n} 個：{list}{more}","pair_orphan":"<br>還沒有對應圖片的 XML {n} 個：{list}{more}","pair_later":"<br>再選擇對應的資料夾就會自動配對。",
+"sep":"、","ellipsis":" …",
+"pl_empty":"尚未載入資料夾。",
+"pl_h_name":"頁名","pl_h_xml":"XML","pl_h_lines":"列數","pl_h_done":"已校","pl_h_status":"狀態",
+"pill_notstart":"未開始","pill_done":"已完成","pill_part":"進行中","btn_continue":"繼續","btn_start":"開始",
+"xml_unreadable":"這一頁的 XML 讀不了：","no_lines":"這一頁的 XML 沒有可用的列（TextLine）。",
+"img_fail_pre":"圖片打不開：","img_fail_suf":"（TIFF 在部分瀏覽器無法顯示，建議先轉成 PNG）",
+"no_region":"未標區域","no_type":"未標類型",
+"line_word":"列 ","region_word":"　區域 ","no_region_warn":"　⚠ 這一列不屬於任何區域",
+"hint_notonto_pre":"類型字串不在本體之內：","hint_notonto_suf":"。請告知專案負責人。","empty_paren":"（空）",
+"hint_has_illegible":"　本列有 □：表示此處字跡不可辨。若你能辨認，請改為該字；不能辨認就照樣保留。",
+"hint_has_geta":"　本列有 〓：表示此字認得但打不出，已另行登記。請照樣保留，不要改成形近的字。",
+"blind_chip":"盲轉寫","blind_toggle":"本頁盲轉寫",
+"blind_toggle_has_review":"這一頁已有覆核紀錄，不能改成盲轉寫。",
+"blind_toggle_off_confirm":"這一頁的盲轉寫還沒完成，關閉之後可能隨即顯示既有轉寫。確定關閉？","blind_banner":"盲轉寫模式：不顯示既有轉寫，請照圖錄文。",
+"blind_locked":"盲轉寫頁還有 {n} 頁未完成，完成後才會顯示既有轉寫。",
+"blind_unmatched":"blind_pages.txt 裡有 {n} 個頁名對不上資料夾中的頁面，這些頁不會以盲轉寫模式打開：{list}{more}",
+"cmp_folder_label":"與資料夾的既有轉寫對照（只比 A 的盲轉寫列，即 IAA）","cmp_folder_col":"既有轉寫",
+"cmp_no_blind":"目前沒有可對照的盲轉寫列：請載入獨立轉寫者的進度 JSON（A），並在「頁面清單」選擇同一個工作資料夾。",
+"ins_box":"插入 □","ins_geta":"插入 〓",
+"done_count":"本頁已校 {n} 列","pg_pos":"第 {a} / {b} 頁",
+"page_done_confirm":"本頁 {n} 列已校完。要開下一張未完成的頁嗎？","last_line_alert":"已到本頁最後一列。還有 {n} 列沒有判定。",
+"all_done":"所有已解析的頁面都校完了。記得導出整本 JSON。",
+"fix_empty":"修改後的文字不能為空；若整列不可辨，請用「整列不可辨」按鈕","trans_empty":"錄文不能為空；若整列不可辨，請用「整列不可辨」按鈕",
+
+"canvas_fail":"這個瀏覽器不允許導出畫布影像。",
+"not_progress":"這不是校書臺的進度文件","resume_ok":"進度已載入。請確認已選好對應的資料夾。","json_fail":"JSON 解析失敗",
+"load_first":"請先載入資料夾。","checking":"檢查中…","run_first":"請先執行檢查。",
+"xml_parsefail":"XML 無法解析",
+"audit_summary":"共檢查 {p} 頁，錯誤 <b>{e}</b> 項，提示 {w} 項",
+"audit_th_combo":"區域 / 列 類型組合","audit_th_count":"列數",
+"th_page":"頁","th_level":"級別","th_line":"列","th_issue":"問題","th_detail":"細節",
+"sev_err":"錯誤","sev_warn":"提示",
+"audit_truncate":"只顯示前 400 條，完整結果請導出 CSV。","audit_none":"沒有發現問題。",
+"a_emptypage":"空頁","a_emptypage_d":"XML 裡沒有 TextLine",
+"a_dupid":"列 id 重複","a_dupid_d":"同一頁出現兩個相同 id",
+"a_fewpts":"多邊形點數過少","a_fewpts_d":"{n} 點，可能只是基線外擴",
+"a_degen":"多邊形退化",
+"a_noregion":"列不屬於任何區域","a_noregion_d":"PAGE 中 TextLine 未嵌在 TextRegion 內",
+"a_region_notonto":"區域類型不在本體","a_line_notonto":"列類型不在本體",
+"a_nestbad":"區域與列類型不合","a_nestbad_d":"{r} 內出現 {l}",
+"a_outside":"多邊形超出影像",
+"a_wide":"列寬異常偏大","a_wide_d":"寬 {w}，同類中位數 {m}，疑似兩列併成一框",
+"a_narrow":"列寬異常偏小","a_narrow_d":"寬 {w}，同類中位數 {m}，疑似一列被切碎",
+"a_notext":"無候選文字","a_notext_d":"將進入錄文模式",
+"a_overlap":"兩列大幅重疊","a_overlap_d":"重疊佔較小框 {p}%",
+"a_order":"閱讀順序可疑","a_order_d":"{n} 列中有 {b} 處由左跳回右，請在 eScriptorium 的 Text panel 覆核",
+"region_id_label":"區域 {id}","a_emptyreg":"空區域","a_emptyreg_d":"類型 {raw}",
+"cmp_loaded":"已載入 {which}，請載入另一份。",
+"cmp_agree":"兩人皆已校 {n} 列　字符一致率 <b>{c}%</b>　列一致率 {l}%",
+"cmp_fold_ok":"已將舊字形與通行形視為一致。未折合的字符一致率為 {r}%，其中 {v} 列的分歧僅來自舊字形寫法差異，不計為轉寫分歧。",
+"cmp_fold_warn":"未折合舊字形。若第二標注者用輸入法直接打通行形，此處的分歧會混入編碼差異，建議勾選上方選項再看一次。",
+"cmp_th_type":"列類型","cmp_th_lines":"列數","cmp_th_lineagree":"列一致率","cmp_th_charagree":"字符一致率",
+"cmp_none":"沒有分歧列。","cmp_nodis":"目前沒有可導出的分歧"
+},
+"zh-Hans": {
+"doc_title":"Proofreading Desk: line-level collation",
+"logo":"校<b>书</b>台",
+"annotator_label":"校对者",
+"annotator_ph":"校对者姓名",
+"lang_btn":"语言",
+"tab_A":"逐列校对","tab_P":"页面清单","tab_Q":"资料自检","tab_C":"两人对照","tab_H":"使用说明",
+"cur_page":"当前页：",
+"btn_prev_page":"← 上一页","btn_next_undone":"下一张未完成 →","btn_to_list":"回页面清单",
+"revisit_banner":"这一页已经校完了，你现在是在复查。若不打算改动，可以直接按“下一张未完成”。",
+"flip_to_horiz":"改为横排显示","flip_to_vert":"改为竖排显示",
+"zoom_label":"放大","ctx_label":"显示该列四周（只作参考，红框内才是本列）","exp_line_png":"导出本列影像 PNG",
+"page_img_alt":"整页影像",
+"prog_a":"第 ","prog_b":" 列 / 共 ","prog_c":" 列",
+"ask_line":"这一列的候选文字与影像一致吗？","vtag_unset":"未校",
+"trans_prompt":"这一列尚无候选文字。请照图录文（图上刻什么录什么）：","trans_save":"确认录文",
+"v_ok":"✓ 一致（正确）","v_fix":"✎ 不一致（修改）","v_blur":"▨ 整列不可辨","v_flag":"⚠ 异常反馈",
+"fix_prompt":"请改成与影像一致的文字（照录字形；看不清的字录 □，打不出的字录 〓）：","fix_save":"确认修改",
+"flag_prompt":"说明异常情况（如：红框严重偏移或略有偏移、夹注被拆错、使用说明没有提到的版面）：","flag_save":"提交反馈",
+"note_ph":"备注（可不填）",
+"prev_btn":"← 上一列","next_btn":"下一列 →",
+"kbd_pre":"键盘：","kbd_ok":" 一致　","kbd_nav":" 前后列　","kbd_save":" 存档",
+"exp_csv_book":"导出整本 CSV","exp_json_book":"导出进度 JSON（整本）",
+"empty_hint":"还没有材料。请到“页面清单”选择存放图片与 XML 的资料夹。",
+"pick_both":"选择工作资料夹（图片与 XML 放一起）","pick_img":"只选图片资料夹","pick_xml":"只选 XML 资料夹","pick_files":"选多个文件（不用资料夹）","load_json":"载入进度 JSON","clear_prog":"删除本机校对进度","clear_pages":"清空页面清单",
+"pair_total":"页面清单现共 {n} 页。","restored_note":"已重新载入上次的 {n} 页。","reopen_note":"上次的页面清单有 {n} 页。浏览器要先取得你的允许，才能再次读取这些资料夹。","reopen_btn":"重新打开","reopen_denied":"没有取得读取权限。可以再按一次“重新打开”，或重新选择资料夹。","restored_missing":"另有 {n} 页的图片或 XML 已不在原处（可能被移动、改名或删除），请重新选择资料夹。",
+"pl_folder_hint":"选一个资料夹，图片与 XML 会依文件名自动配对。同一个资料夹里混放也可以。",
+"run_audit":"检查全部页面","exp_audit":"导出自检报告 CSV",
+"audit_note":"检查 base seg 在列层级是否可用：多边形是否退化、列是否落在区域外、是否有疑似并列或重复框、类型字符串是否在本体之内。",
+"audit_empty":"尚未执行检查。",
+"load_A":"载入 校对者A 的进度 JSON","load_B":"载入 校对者B 的进度 JSON","exp_dis":"导出分歧 CSV",
+"fold_label":"旧字形与通行形视为一致（计算 IAA 时建议勾选）",
+"cmp_empty":"载入两份进度文件后，这里会显示字符一致率、分层一致率与分歧列。",
+"help_h_start":"如何开始",
+"help_start_p_fsa":"在“页面清单”点“选择工作资料夹”，选中存放图片与 XML 的资料夹。图片与 XML 依文件名自动配对，清单会标出已经校完的页。再选其他资料夹，它的页面会加进同一份清单。每个判定都即时存在本机；关闭校书台后再打开，会重新载入上次的资料夹（浏览器可能要你先点“重新打开”并允许读取），回到上次停下的那一页。勾选字列与转写下方的<b>显示该列四周</b>即可扩大显示范围。每次收工请点“导出进度 JSON（整本）”。",
+"help_start_p":"在“页面清单”点“选择工作资料夹”，选中存放图片与 XML 的资料夹。图片与 XML 依文件名自动配对，清单会标出已经校完的页。再选其他资料夹，它的页面会加进同一份清单。中途可以直接关闭校书台，进度存在本机；下次打开校书台、选同一个资料夹，就能从上次停下的地方继续。勾选字列与转写下方的<b>显示该列四周</b>即可扩大显示范围。每次收工请点“导出进度 JSON（整本）”。",
+"help_start_p_desktop":"在“页面清单”点“选择工作资料夹”，选中存放图片与 XML 的资料夹。图片与 XML 依文件名自动配对，清单会标出已经校完的页。再选其他资料夹，它的页面会加进同一份清单。每个判定都即时存在本机；关闭校书台后再打开，会自动重新载入上次的资料夹，回到上次停下的那一页。勾选字列与转写下方的<b>显示该列四周</b>即可扩大显示范围。每次收工请点“导出进度 JSON（整本）”。",
+"help_h_use":"工具用途",
+"help_use_p":"左侧是书页上的一列字，已裁切放大；右侧是这一列的既有转写。工作分两种。<b>复核</b>：看图判断右侧文字是否与图一致，用下面四个按钮作答。<b>独立转写</b>：指定的页面会以“盲转写模式”打开，右侧不显示既有转写，只有空白录文框，请照图录文。",
+"help_h_btn":"四个按钮",
+"help_btn1":"<b>一致</b>：文字与图完全相同。按一下（或按 Enter）即记录，按钮随即填色；确认后再按“下一列”。",
+"help_btn2":"<b>不一致</b>：把文字改成与图相同。<b>一切以图为准</b>：图上是“峯”就写“峯”，改成“峰”即为错录。缺笔字、俗写等字形，录入它所代表的通行字。若认得是哪个字，但这个字本身用输入法打不出，或者字迹看不清，请用 □ 代表无法辨认，〓 代表通行输入法没有收录。",
+"help_btn3":"<b>整列不可辨</b>：整列字迹都无法辨认时才用。只有个别字看不清，请在文字里用 □。",
+"help_btn4":"<b>异常反馈</b>：红框严重偏移、一列被拆成两列、两列被框在一起，或任何使用说明没有提到的情况，用一句话描述即可。不影响转写的小问题（例如红框略有偏移），照常判“一致”或“不一致”，再在这里写明，两者都会记下。",
+"help_h_three":"四种列",
+"help_three1":"<b>正文列</b>：照图录文。",
+"help_three2":"<b>夹注列</b>：正文中间的双行小字，每个框只应包含其中一列。若一个框里框进了两列小字，请用“异常反馈”。",
+"help_three3":"<b>图上标签</b>：图版上零散分布的地名、星官名、方位、里程等短标。框内的字照顺序录，各标签之间没有先后。图版旁成段的文字（如界至、图说）属于正文列，与正文一样由右至左阅读；若顺序有误，请用“异常反馈”。",
+"help_h_sym":"特殊符号",
+"help_three4":"<b>题名列</b>：题区内的一列，照图录文。",
+"help_sym1":"<b>□ 看不清的字</b>：书上这里有字，但因漫漶、虫蛀、缺损或扫描不清而无法辨认，一个字录一个 □。字形清楚、只是认不出的字，也录 □，并在备注写“字形清楚，未能识别”。",
+"help_sym2":"<b>〓 打不出的字</b>：认得是哪个字，但用输入法打不出（例如新收的生僻字），一个字录一个 〓，并在备注写下字形描述，知道码位的也一并写上，例如“左土右觜，U+3268F”。即使你能用其他方法输入该字，也请录 〓，以免两人写法不一。",
+"help_sym3":"录文框旁的“插入 □”“插入 〓”两个按钮可直接插入符号，也可按 ⌥/Alt+1、⌥/Alt+2。",
+"help_h_two":"两条提醒",
+"help_two1":"书上的朱笔圈点是句读符号，录文时略去。",
+"help_two2":"转录面板下方页面原图可以直接点击某一列跳转；绿色表示已经校过。",
+"footer":"校书台 v0.6 · 单文件离线运行 · 数据只存在本机",
+"lang_modal_title":"语言 · 語言 · Language",
+"region_Main":"正文区","region_Interlinear":"夹注区","region_Figure":"图区","region_Title":"题区","region_Page":"页面",
+"line_Main":"正文列","line_Interlinear":"夹注列","line_figureLabel":"图上标签","line_figureTitle":"题名列",
+"hint_Main":"正文列：照图录文。有独立字码的异体字照原样保留；缺笔、俗写录通行字。",
+"hint_Interlinear":"夹注列：正文中间的双行小字，每个框只应包含其中一列。若一个框里框进了两列小字，请用“异常反馈”。",
+"hint_figureLabel":"图上标签：图版上零散的地名、星官名、方位、里程等短标。框内的字照顺序录，各标签之间没有先后。",
+"hint_figureTitle":"题名列：题区内的一列，照图录文。",
+"verdict_正確":"正确","verdict_修改":"修改","verdict_不可辨":"整列不可辨","verdict_異常":"异常","verdict_轉寫":"转写",
+"saved_at":"已存档 {time}","store_unavail":"本机暂存不可用，请记得导出 JSON",
+"clear_confirm":"要删除这台电脑上保存的全部校对进度（{n} 列判定）吗？删除之前会先自动导出一份备份 JSON。",
+"got_msg":"尚未配对：图片 {i} 个、XML {x} 个。再选择对应的资料夹就会自动配对。",
+"pair_head":"配对成功 <b>{n}</b> 页。","pair_ok":"配对成功 {n} 页，图片与 XML 一一对应。",
+"pair_no_xml":"<br>还没有对应 XML 的图片 {n} 个：{list}{more}","pair_orphan":"<br>还没有对应图片的 XML {n} 个：{list}{more}","pair_later":"<br>再选择对应的资料夹就会自动配对。",
+"sep":"、","ellipsis":" …",
+"pl_empty":"尚未载入资料夹。",
+"pl_h_name":"页名","pl_h_xml":"XML","pl_h_lines":"列数","pl_h_done":"已校","pl_h_status":"状态",
+"pill_notstart":"未开始","pill_done":"已完成","pill_part":"进行中","btn_continue":"继续","btn_start":"开始",
+"xml_unreadable":"这一页的 XML 读不了：","no_lines":"这一页的 XML 没有可用的列（TextLine）。",
+"img_fail_pre":"图片打不开：","img_fail_suf":"（TIFF 在部分浏览器无法显示，建议先转成 PNG）",
+"no_region":"未标区域","no_type":"未标类型",
+"line_word":"列 ","region_word":"　区域 ","no_region_warn":"　⚠ 这一列不属于任何区域",
+"hint_notonto_pre":"类型字符串不在本体之内：","hint_notonto_suf":"。请告知项目负责人。","empty_paren":"（空）",
+"hint_has_illegible":"　本列有 □：表示此处字迹不可辨。若你能辨认，请改为该字；不能辨认就照样保留。",
+"hint_has_geta":"　本列有 〓：表示此字认得但打不出，已另行登记。请照样保留，不要改成形近的字。",
+"blind_chip":"盲转写","blind_toggle":"本页盲转写",
+"blind_toggle_has_review":"这一页已有复核记录，不能改成盲转写。",
+"blind_toggle_off_confirm":"这一页的盲转写还没完成，关闭之后可能随即显示既有转写。确定关闭？","blind_banner":"盲转写模式：不显示既有转写，请照图录文。",
+"blind_locked":"盲转写页还有 {n} 页未完成，完成后才会显示既有转写。",
+"blind_unmatched":"blind_pages.txt 里有 {n} 个页名对不上资料夹中的页面，这些页不会以盲转写模式打开：{list}{more}",
+"cmp_folder_label":"与资料夹的既有转写对照（只比 A 的盲转写列，即 IAA）","cmp_folder_col":"既有转写",
+"cmp_no_blind":"目前没有可对照的盲转写列：请载入独立转写者的进度 JSON（A），并在“页面清单”选择同一个工作资料夹。",
+"ins_box":"插入 □","ins_geta":"插入 〓",
+"done_count":"本页已校 {n} 列","pg_pos":"第 {a} / {b} 页",
+"page_done_confirm":"本页 {n} 列已校完。要开下一张未完成的页吗？","last_line_alert":"已到本页最后一列。还有 {n} 列没有判定。",
+"all_done":"所有已解析的页面都校完了。记得导出整本 JSON。",
+"fix_empty":"修改后的文字不能为空；若整列不可辨，请用“整列不可辨”按钮","trans_empty":"录文不能为空；若整列不可辨，请用“整列不可辨”按钮",
+
+"canvas_fail":"这个浏览器不允许导出画布影像。",
+"not_progress":"这不是校书台的进度文件","resume_ok":"进度已载入。请确认已选好对应的资料夹。","json_fail":"JSON 解析失败",
+"load_first":"请先载入资料夹。","checking":"检查中…","run_first":"请先执行检查。",
+"xml_parsefail":"XML 无法解析",
+"audit_summary":"共检查 {p} 页，错误 <b>{e}</b> 项，提示 {w} 项",
+"audit_th_combo":"区域 / 列 类型组合","audit_th_count":"列数",
+"th_page":"页","th_level":"级别","th_line":"列","th_issue":"问题","th_detail":"细节",
+"sev_err":"错误","sev_warn":"提示",
+"audit_truncate":"只显示前 400 条，完整结果请导出 CSV。","audit_none":"没有发现问题。",
+"a_emptypage":"空页","a_emptypage_d":"XML 里没有 TextLine",
+"a_dupid":"列 id 重复","a_dupid_d":"同一页出现两个相同 id",
+"a_fewpts":"多边形点数过少","a_fewpts_d":"{n} 点，可能只是基线外扩",
+"a_degen":"多边形退化",
+"a_noregion":"列不属于任何区域","a_noregion_d":"PAGE 中 TextLine 未嵌在 TextRegion 内",
+"a_region_notonto":"区域类型不在本体","a_line_notonto":"列类型不在本体",
+"a_nestbad":"区域与列类型不合","a_nestbad_d":"{r} 内出现 {l}",
+"a_outside":"多边形超出影像",
+"a_wide":"列宽异常偏大","a_wide_d":"宽 {w}，同类中位数 {m}，疑似两列并成一框",
+"a_narrow":"列宽异常偏小","a_narrow_d":"宽 {w}，同类中位数 {m}，疑似一列被切碎",
+"a_notext":"无候选文字","a_notext_d":"将进入录文模式",
+"a_overlap":"两列大幅重叠","a_overlap_d":"重叠占较小框 {p}%",
+"a_order":"阅读顺序可疑","a_order_d":"{n} 列中有 {b} 处由左跳回右，请在 eScriptorium 的 Text panel 覆核",
+"region_id_label":"区域 {id}","a_emptyreg":"空区域","a_emptyreg_d":"类型 {raw}",
+"cmp_loaded":"已载入 {which}，请载入另一份。",
+"cmp_agree":"两人皆已校 {n} 列　字符一致率 <b>{c}%</b>　列一致率 {l}%",
+"cmp_fold_ok":"已将旧字形与通行形视为一致。未折合的字符一致率为 {r}%，其中 {v} 列的分歧仅来自旧字形写法差异，不计为转写分歧。",
+"cmp_fold_warn":"未折合旧字形。若第二标注者用输入法直接打通行形，此处的分歧会混入编码差异，建议勾选上方选项再看一次。",
+"cmp_th_type":"列类型","cmp_th_lines":"列数","cmp_th_lineagree":"列一致率","cmp_th_charagree":"字符一致率",
+"cmp_none":"没有分歧列。","cmp_nodis":"目前没有可导出的分歧"
+},
+"en": {
+"doc_title":"Proofreading Desk: line-level collation",
+"logo":"Proof<b>reading</b> Desk",
+"annotator_label":"Collator",
+"annotator_ph":"Collator name",
+"lang_btn":"Language",
+"tab_A":"Line by line","tab_P":"Pages","tab_Q":"Data check","tab_C":"Compare two","tab_H":"Help",
+"cur_page":"Current page: ",
+"btn_prev_page":"← Previous page","btn_next_undone":"Next unfinished →","btn_to_list":"Back to list",
+"revisit_banner":"This page is already finished; you are reviewing it. If you do not plan to change anything, just press 'Next unfinished'.",
+"flip_to_horiz":"Switch to horizontal","flip_to_vert":"Switch to vertical",
+"zoom_label":"Zoom","ctx_label":"Show neighbouring area (reference only; the red frame marks this line)","exp_line_png":"Export this line as PNG",
+"page_img_alt":"Full page image",
+"prog_a":"Line ","prog_b":" of ","prog_c":"",
+"ask_line":"Does the candidate text match the image for this line?","vtag_unset":"Unchecked",
+"trans_prompt":"This line has no candidate text yet. Transcribe exactly what the image shows:","trans_save":"Save transcription",
+"v_ok":"✓ Match (correct)","v_fix":"✎ Mismatch (fix)","v_blur":"▨ Whole line illegible","v_flag":"⚠ Report issue",
+"fix_prompt":"Enter text matching the image (copy the glyph as written; □ for a character you cannot read, 〓 for one you cannot type):","fix_save":"Save fix",
+"flag_prompt":"Describe the issue (e.g. red box badly or slightly off, interlinear note split wrongly, a layout this help page does not cover):","flag_save":"Submit report",
+"note_ph":"Note (optional)",
+"prev_btn":"← Previous line","next_btn":"Next line →",
+"kbd_pre":"Keys: ","kbd_ok":" match　","kbd_nav":" prev / next line　","kbd_save":" save",
+"exp_csv_book":"Export full CSV","exp_json_book":"Export progress JSON (all pages)",
+"empty_hint":"No material yet. Go to <b>Pages</b> and choose the folder with your images and XML.",
+"pick_both":"Choose working folder (images and XML together)","pick_img":"Images folder only","pick_xml":"XML folder only","pick_files":"Pick multiple files (no folder)","load_json":"Load progress JSON","clear_prog":"Delete saved progress","clear_pages":"Clear page list",
+"pair_total":"The page list now has {n} page(s).","restored_note":"Reopened the {n} page(s) from last time.","reopen_note":"Your last page list has {n} page(s). The browser needs your permission to read those folders again.","reopen_btn":"Reopen","reopen_denied":"Permission was not given. Click Reopen again, or choose the folders again.","restored_missing":"{n} more page(s) could not be reopened: their image or XML is no longer where it was (moved, renamed or deleted). Choose the folder again.",
+"pl_folder_hint":"Choose a folder; images and XML pair automatically by filename. Mixing them in one folder is fine.",
+"run_audit":"Check all pages","exp_audit":"Export check report CSV",
+"audit_note":"Checks whether base segmentation is usable at line level: degenerate polygons, lines outside regions, suspected merged or duplicate boxes, and whether type strings are within the ontology.",
+"audit_empty":"Not run yet.",
+"load_A":"Load collator A's progress JSON","load_B":"Load collator B's progress JSON","exp_dis":"Export disagreements CSV",
+"fold_label":"Treat old glyph forms and common forms as equal (recommended for IAA)",
+"cmp_empty":"After loading two progress files, this shows character agreement, per-type agreement, and disagreeing lines.",
+"help_h_start":"Getting started",
+"help_start_p_fsa":"In 'Pages', click 'Choose working folder' and select the folder holding your images and XML. Images and XML pair automatically by filename, and the list marks which pages are done. Choosing another folder adds its pages to the same list. Every verdict is saved on this machine as you work; when you close and reopen the app, it reloads your folders (the browser may first ask you to click 'Reopen' and allow access) and returns to the page where you stopped. To see more of the page around the line, tick <b>Show neighbouring area</b> below the line and its transcription. At the end of each session, click 'Export progress JSON (all pages)'.",
+"help_start_p":"In 'Pages', click 'Choose working folder' and select the folder holding your images and XML. Images and XML pair automatically by filename, and the list marks which pages are done. Choosing another folder adds its pages to the same list. You can close the app at any point; progress is saved on this machine. Reopen the app, choose the same folder, and you continue where you stopped. To see more of the page around the line, tick <b>Show neighbouring area</b> below the line and its transcription. At the end of each session, click 'Export progress JSON (all pages)'.",
+"help_start_p_desktop":"In 'Pages', click 'Choose working folder' and select the folder holding your images and XML. Images and XML pair automatically by filename, and the list marks which pages are done. Choosing another folder adds its pages to the same list. Every verdict is saved on this machine as you work; when you quit and reopen the app, it reloads your folders and returns to the page where you stopped. To see more of the page around the line, tick <b>Show neighbouring area</b> below the line and its transcription. At the end of each session, click 'Export progress JSON (all pages)'.",
+"help_h_use":"What the tool does",
+"help_use_p":"On the left is one line from the page, cropped and enlarged. On the right is the existing transcription of that line. There are two kinds of work. <b>Review</b>: compare the text with the image and answer with the four buttons below. <b>Independent transcription</b>: the assigned pages open in Blind mode, with the existing transcription hidden and an empty box on the right; type exactly what the image shows.",
+"help_h_btn":"The four buttons",
+"help_btn1":"<b>Match</b>: the text is identical to the image. Click it (or press Enter) to record it, and the button fills in; then click 'Next line'.",
+"help_btn2":"<b>Mismatch</b>: change the text to match the image. <b>The image is always the standard</b>: if the image shows 峯, write 峯; changing it to 峰 counts as an error. For forms such as characters with missing strokes or informal variants, enter the standard character they stand for. If you recognise a character but cannot type it, or cannot read it, use □ for a character you cannot read and 〓 for one that common input methods lack.",
+"help_btn3":"<b>Whole line illegible</b>: use this only when no part of the line can be read. If only some characters are unclear, mark them with □ in the text.",
+"help_btn4":"<b>Report issue</b>: the red box is badly off, one line was split into two, two lines were boxed together, or anything this help page does not cover. One sentence is enough. For a small problem that leaves the transcription correct (say, the box is slightly off), give the line its usual Match or Mismatch and describe the problem here too; both are recorded.",
+"help_h_three":"The four line types",
+"help_three1":"<b>Main line</b>: transcribe exactly as shown.",
+"help_three2":"<b>Interlinear line</b>: the double-column small text within the main text. Each box should hold only one of the two columns; if a box holds both, use 'Report issue'.",
+"help_three3":"<b>Figure label</b>: scattered short labels on a map or star chart, such as place names, star names, directions and distances. Enter the characters in each box in order; the labels have no order among themselves. Continuous text beside a figure, such as boundary notes or captions, is a main line and, like all main text, reads right to left; if its order is wrong, use 'Report issue'.",
+"help_h_sym":"Special symbols",
+"help_three4":"<b>Title line</b>: a line in a title region; transcribe exactly as shown.",
+"help_sym1":"<b>□ for a character you cannot read</b>: there is a character here, but wear, worm damage, loss or a poor scan makes it illegible. Enter one □ per character. If the shape is clear but you cannot identify the character, also enter □ and write \"shape clear, not identified\" in the note.",
+"help_sym2":"<b>〓 for a character you cannot type</b>: you know which character it is, but your input method cannot produce it (a recently encoded rare character, for example). Enter one 〓 per character and describe its shape in the note, with the code point if you know it, e.g. \"土 left, 觜 right, U+3268F\". Enter 〓 even if you could insert the character another way, so that both transcribers record it the same way.",
+"help_sym3":"The \"Insert □\" and \"Insert 〓\" buttons beside the text box insert the symbols; ⌥/Alt+1 and ⌥/Alt+2 do the same.",
+"help_h_two":"Two reminders",
+"help_two1":"The vermilion circles and dots on the page are punctuation marks; leave them out of the transcription.",
+"help_two2":"Click any line on the page image below the transcription panel to jump to it; green means already checked.",
+"footer":"Proofreading Desk v0.6 · single file, runs offline · data stays on your machine",
+"lang_modal_title":"Language · 語言 · 语言",
+"region_Main":"Main text","region_Interlinear":"Interlinear","region_Figure":"Figure","region_Title":"Title","region_Page":"Page",
+"line_Main":"Main line","line_Interlinear":"Interlinear line","line_figureLabel":"Figure label","line_figureTitle":"Title line",
+"hint_Main":"Main line: transcribe as shown. Keep variant forms that have their own character code; enter the standard character for forms with missing strokes or informal variants.",
+"hint_Interlinear":"Interlinear line: double-column small text within the main text. Each box should hold only one of the two columns; if a box holds both, use 'Report issue'.",
+"hint_figureLabel":"Figure label: scattered short labels such as place names, star names, directions and distances. Enter the characters in the box in order; the labels have no order among themselves.",
+"hint_figureTitle":"Title line: a line in a title region; transcribe exactly as shown.",
+"verdict_正確":"Correct","verdict_修改":"Fixed","verdict_不可辨":"Whole line illegible","verdict_異常":"Issue","verdict_轉寫":"Transcribed",
+"saved_at":"Saved at {time}","store_unavail":"Local cache unavailable; remember to export JSON",
+"clear_confirm":"Delete all collation progress saved on this computer ({n} line verdicts)? A backup JSON is exported automatically first.",
+"got_msg":"Not yet paired: {i} image(s), {x} XML file(s). Choose the matching folder(s) and they pair automatically.",
+"pair_head":"Paired <b>{n}</b> page(s).","pair_ok":"Paired {n} page(s); images and XML match one to one.",
+"pair_no_xml":"<br>{n} image(s) without matching XML yet: {list}{more}","pair_orphan":"<br>{n} XML file(s) without matching image yet: {list}{more}","pair_later":"<br>Choose the matching folder(s) and they pair automatically.",
+"sep":", ","ellipsis":" …",
+"pl_empty":"No folder loaded yet.",
+"pl_h_name":"Page","pl_h_xml":"XML","pl_h_lines":"Lines","pl_h_done":"Done","pl_h_status":"Status",
+"pill_notstart":"Not started","pill_done":"Done","pill_part":"In progress","btn_continue":"Continue","btn_start":"Start",
+"xml_unreadable":"Cannot read the XML for this page: ","no_lines":"This page's XML has no usable lines (TextLine).",
+"img_fail_pre":"Cannot open image: ","img_fail_suf":" (TIFF may not display in some browsers; convert to PNG first).",
+"no_region":"Unlabelled region","no_type":"Unlabelled type",
+"line_word":"Line ","region_word":"　region ","no_region_warn":"　⚠ this line belongs to no region",
+"hint_notonto_pre":"Type string is not in the ontology: ","hint_notonto_suf":". Please tell the project coordinator.","empty_paren":"(empty)",
+"hint_has_illegible":"　This line contains □: a character here is illegible. If you can read it, replace □ with the character; otherwise keep □.",
+"hint_has_geta":"　This line contains 〓: a known character that cannot be typed, recorded separately. Keep 〓 as is; do not replace it with a similar-looking character.",
+"blind_chip":"Blind","blind_toggle":"Blind mode for this page",
+"blind_toggle_has_review":"This page already has review verdicts, so it cannot switch to Blind mode.",
+"blind_toggle_off_confirm":"Blind transcription of this page is not finished. Turning it off may show the existing transcription right away. Turn it off?","blind_banner":"Blind mode: the existing transcription is hidden; type what the image shows.",
+"blind_locked":"{n} blind pages still to do; existing transcriptions appear once they are finished.",
+"blind_unmatched":"{n} name(s) in blind_pages.txt match no page in the folder, so those pages will not open in Blind mode: {list}{more}",
+"cmp_folder_label":"Compare with the folder's existing transcription (A's blind lines only: the IAA)","cmp_folder_col":"Existing transcription",
+"cmp_no_blind":"No blind lines to compare yet: load the independent transcriber's progress JSON as A, and choose the same working folder under Pages.",
+"ins_box":"Insert □","ins_geta":"Insert 〓",
+"done_count":"{n} line(s) checked on this page","pg_pos":"Page {a} of {b}",
+"page_done_confirm":"All {n} lines on this page are done. Open the next unfinished page?","last_line_alert":"This is the last line on the page. {n} line(s) still undecided.",
+"all_done":"All parsed pages are done. Remember to export the full JSON.",
+"fix_empty":"The corrected text cannot be empty; use 'Whole line illegible' if no part of the line can be read.","trans_empty":"The transcription cannot be empty; use 'Whole line illegible' if no part of the line can be read.",
+
+"canvas_fail":"This browser does not allow exporting canvas images.",
+"not_progress":"This is not a Proofreading Desk progress file.","resume_ok":"Progress loaded. Make sure you have selected the matching folder.","json_fail":"JSON parse failed",
+"load_first":"Load a folder first.","checking":"Checking…","run_first":"Run the check first.",
+"xml_parsefail":"XML could not be parsed",
+"audit_summary":"Checked {p} page(s): <b>{e}</b> error(s), {w} notice(s)",
+"audit_th_combo":"Region / line type combination","audit_th_count":"Lines",
+"th_page":"Page","th_level":"Level","th_line":"Line","th_issue":"Issue","th_detail":"Detail",
+"sev_err":"Error","sev_warn":"Notice",
+"audit_truncate":"Showing the first 400 rows; export CSV for the full result.","audit_none":"No issues found.",
+"a_emptypage":"Empty page","a_emptypage_d":"No TextLine in the XML",
+"a_dupid":"Duplicate line id","a_dupid_d":"Two identical ids on the same page",
+"a_fewpts":"Too few polygon points","a_fewpts_d":"{n} point(s); may be just a dilated baseline",
+"a_degen":"Degenerate polygon",
+"a_noregion":"Line not in any region","a_noregion_d":"TextLine not nested in a TextRegion in PAGE",
+"a_region_notonto":"Region type not in ontology","a_line_notonto":"Line type not in ontology",
+"a_nestbad":"Region / line type mismatch","a_nestbad_d":"{l} appears inside {r}",
+"a_outside":"Polygon outside image",
+"a_wide":"Line unusually wide","a_wide_d":"width {w}, type median {m}; two lines may be merged into one box",
+"a_narrow":"Line unusually narrow","a_narrow_d":"width {w}, type median {m}; one line may be split apart",
+"a_notext":"No candidate text","a_notext_d":"Will enter transcription mode",
+"a_overlap":"Two lines overlap heavily","a_overlap_d":"overlap is {p}% of the smaller box",
+"a_order":"Reading order suspect","a_order_d":"{b} of {n} lines jump left-to-right against order; re-check in eScriptorium's Text panel",
+"region_id_label":"Region {id}","a_emptyreg":"Empty region","a_emptyreg_d":"type {raw}",
+"cmp_loaded":"Loaded {which}; load the other file.",
+"cmp_agree":"Both checked {n} line(s)　character agreement <b>{c}%</b>　line agreement {l}%",
+"cmp_fold_ok":"Old glyph forms are treated as equal to common forms. Unfolded character agreement is {r}%, of which {v} line(s) differ only in old glyph form and are not counted as transcription disagreements.",
+"cmp_fold_warn":"Old glyph forms not folded. If the second annotator typed common forms directly, disagreements here mix in encoding differences; tick the option above and look again.",
+"cmp_th_type":"Line type","cmp_th_lines":"Lines","cmp_th_lineagree":"Line agreement","cmp_th_charagree":"Char agreement",
+"cmp_none":"No disagreeing lines.","cmp_nodis":"No disagreements to export right now."
+}
+}
+;
+const LANG_KEY = "jiaoshutai_lang";
+let LANG = "zh-Hant";
+function t(key){
+  const d = I18N[LANG] || I18N["zh-Hant"];
+  const v = d[key];
+  return (v != null) ? v : (I18N["zh-Hant"][key] != null ? I18N["zh-Hant"][key] : key);
+}
+function fmt(s, o){ return String(s).replace(/\{(\w+)\}/g, (m,k)=> (o && o[k]!=null) ? o[k] : m); }
+let LABEL_REGION = {}, LABEL_LINE = {}, HINT_LINE = {};
+function rebuildLabels(){
+  LABEL_REGION = {Main:t("region_Main"), Interlinear:t("region_Interlinear"), Figure:t("region_Figure"), Title:t("region_Title"), Page:t("region_Page")};
+  LABEL_LINE   = {Main:t("line_Main"), Interlinear:t("line_Interlinear"), figureLabel:t("line_figureLabel"), figureTitle:t("line_figureTitle")};
+  HINT_LINE    = {Main:t("hint_Main"), Interlinear:t("hint_Interlinear"), figureLabel:t("hint_figureLabel"), figureTitle:t("hint_figureTitle")};
+}
+function applyLang(lang){
+  if (!I18N[lang]) lang = "zh-Hant";
+  LANG = lang;
+  document.documentElement.lang = lang;
+  rebuildLabels();
+  document.title = t("doc_title");
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.getAttribute("data-i18n")));
+  document.querySelectorAll("[data-i18n-html]").forEach(el => el.innerHTML = t(el.getAttribute("data-i18n-html")));
+  // 說明裡的字形示例（峯／峰）以宋體顯示
+  document.querySelectorAll(".help [data-i18n-html]").forEach(el => el.innerHTML = el.innerHTML.replace(/[峯峰]/g, '<span class="glyph">$&</span>'));
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => el.setAttribute("placeholder", t(el.getAttribute("data-i18n-ph"))));
+  document.querySelectorAll("[data-i18n-alt]").forEach(el => el.setAttribute("alt", t(el.getAttribute("data-i18n-alt"))));
+  document.querySelectorAll(".langOpt").forEach(b => b.classList.toggle("cur", b.dataset.lang === lang));
+  const c = $("colText");
+  if (c) $("flip").textContent = c.classList.contains("horiz") ? t("flip_to_vert") : t("flip_to_horiz");
+  if (typeof renderPageList === "function") renderPageList();
+  if (state.pi >= 0) show();
+  if (cmp.A || cmp.B) renderCmp();
+  else { const co = $("cmpOut"); if (co){ co.className = "empty"; co.textContent = t("cmp_empty"); } }
+  const ao = $("auditOut"); if (ao && !state.auditRows.length){ ao.className = "empty"; ao.textContent = t("audit_empty"); }
+}
+/* 首次啟動時必須選一種語言（遮罩與 Esc 不關閉）；從頁首「語言」按鈕打開時可用遮罩或 Esc 關閉 */
+let langRequired = false;
+function openLangModal(required){
+  langRequired = !!required;
+  $("langModal").classList.add("show");
+  document.querySelector(".langBox").focus({preventScroll:true}); // Tab 從選項開始，不落到遮罩後面
+}
+function closeLangModal(){
+  $("langModal").classList.remove("show"); langRequired = false;
+  $("scroller").focus({preventScroll:true});
+}
+function langModalOpen(){ return $("langModal").classList.contains("show"); }
+
+
+/* ============ 本體對照表（本體 v1.2；與打分器共用，見 ontology_charpolicy_v4 §1.4） ============ */
+/* 規範化：把 eScriptorium 裡出現過的各種寫法收斂到本體的標準名。
+   表中沒有的字串原樣保留（標準名 Main、Figure 等即由此通過），不在本體內者由自檢提示。 */
+const NORM_REGION = {"main":"Main","main-text":"Main","paragraph":"Main","正文":"Main",
+         "Interlinear(夾註)":"Interlinear","夾註":"Interlinear",
+         "figure":"Figure","graphic":"Figure","image":"Figure","輿圖":"Figure",
+         "title":"Title","heading":"Title","題":"Title"};
+const NORM_LINE = {"":"Main","default":"Main","main":"Main","正文":"Main",
+         "Interlinear(夾註)":"Interlinear","夾註":"Interlinear",
+         "placeName":"figureLabel","PlaceName":"figureLabel","place_name":"figureLabel",
+         "figure_label":"figureLabel","figureLabel":"figureLabel",
+         "figureTitle":"figureTitle","figure_title":"figureTitle"};
+/* 舊版進度（JSON、本機暫存）裡的列類型仍可能是 placeName 等舊寫法，載入時一律改為標準名 */
+function normLineType(s){ return (s && NORM_LINE[s] !== undefined) ? NORM_LINE[s] : s; }
+function normEdits(edits){
+  for (const k in (edits || {})) if (edits[k] && edits[k].line_type) edits[k].line_type = normLineType(edits[k].line_type);
+  return edits;
+}
+
+/* A 類舊字形等價表：舊形與通行形各有 URO 碼位、NFC 不折回。
+   GT 照原樣保留舊形；計算標注者間一致率與模型計分時，兩形視為等價。
+   此表為初版，遇到新字請覆核後補入。 */
+const VARIANT_FOLD = {
+  "\u6DF8":"\u6E05", // 淸 → 清
+  "\u5861":"\u586B", // 塡 → 填
+  "\u93AD":"\u93AE", // 鎭 → 鎮
+  "\u985A":"\u985B", // 顚 → 顛
+  "\u5DD3":"\u5DD4", // 巓 → 巔
+  "\u613C":"\u614E", // 愼 → 慎
+  "\u55A9":"\u55BB", // 喩 → 喻
+  "\u6961":"\u6986", // 楡 → 榆
+  "\u784F":"\u7814", // 硏 → 研
+  "\u9751":"\u9752", // 靑 → 青
+  "\u771E":"\u771F", // 眞 → 真
+  "\u516A":"\u4FDE", // 兪 → 俞
+  "\u56D8":"\u56DE"  // 囘 → 回
+};
+function foldVariants(s){
+  let out = "";
+  for (const c of String(s == null ? "" : s)) out += (VARIANT_FOLD[c] || c);
+  return out.normalize("NFC");
+}
+
+/* 合法巢狀（§1.2）：區域類型 → 允許出現的列類型
+   圖文混排頁同時有 Main 與 Figure 兩種區域：成段文字在 Main 區，
+   圖上零散的地名、星官名等短標在 Figure 區。圖區內不應出現正文列。
+   Title 為頂層區，只容題名列。整頁沒有 Main 區、Title 區只有一列，都是合法頁型。 */
+const LEGAL_NEST = {
+  Main:        {Main:1, Interlinear:1},
+  Interlinear: {Interlinear:1},
+  Figure:      {figureLabel:1},
+  Title:       {figureTitle:1}
+};
+
+
+/* ============ 狀態 ============ */
+const state = {
+  pages: [],        // {name, imgFile, xmlFile, parsed, lines, regions, natW, natH, xmlName}
+  pi: -1,           // 當前頁索引
+  idx: 0,           // 當前列索引
+  img: null,        // HTMLImageElement（畫布用）
+  imgURL: null,
+  zoom: 1,
+  progress: {},     // {pageName: {edits:{lineId:{...}}, idx:int}}
+  auditRows: [],
+  blind: new Set(), // blind_pages.txt 指定、且在資料夾中找到的頁名
+  blindUnmatched: []
+};
+
+const $ = id => document.getElementById(id);
+const panes = {A:$("paneA"), P:$("paneP"), Q:$("paneQ"), C:$("paneC"), H:$("paneH")};
+const tabs  = {A:$("tabA"), P:$("tabP"), Q:$("tabQ"), C:$("tabC"), H:$("tabH")};
+const TABKEYS = ["A","P","Q","C","H"];
+function goTab(k){ for (const j of TABKEYS){ panes[j].classList.toggle("hidden", j!==k); tabs[j].classList.toggle("on", j===k); }
+  // 視窗本身不捲動；把焦點交給內容區，PageUp/PageDown 與方向鍵才能捲動
+  $("scroller").focus({preventScroll:true}); }
+for (const k of TABKEYS) tabs[k].onclick = () => { goTab(k); if (k === "C" && (cmp.A || cmp.B)) refreshCmp(); };
+
+const coll = new Intl.Collator(undefined, {numeric:true, sensitivity:"base"});
+const baseName = n => n.replace(/\.[^.]+$/, "");
+const IMG_EXT = /\.(png|jpe?g|webp|gif|bmp|tiff?)$/i;
+const XML_EXT = /\.(xml|pxml|alto)$/i;
+
+/* ============ 本機暫存（file:// 下可能被禁用，故一律容錯） ============ */
+const STORE_KEY = "jiaoshutai_v04";
+function saveLocal(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify({
+      annotator: $("who").value.trim(), progress: state.progress, ts: Date.now()
+    }));
+    $("saveNote").textContent = fmt(t("saved_at"), {time:new Date().toLocaleTimeString()});
+  }catch(err){ $("saveNote").textContent = t("store_unavail"); }
+}
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY); if (!raw) return;
+    const d = JSON.parse(raw);
+    state.progress = d.progress || {};
+    for (const k in state.progress) normEdits(state.progress[k].edits);
+    if (d.annotator && !$("who").value) $("who").value = d.annotator;
+  }catch(err){ /* 忽略 */ }
+}
+loadLocal();
+/* 刪除前先把全部進度導出成備份 JSON（格式與「導出進度 JSON」相同，可直接「載入進度 JSON」還原）。
+   以進度本身為準，不依頁面清單，清單是空的也不會漏掉。 */
+function backupProgress(){
+  const pages = {};
+  for (const k in state.progress){
+    const pr = state.progress[k], ed = pr.edits || {};
+    if (!Object.keys(ed).length && !(pr.drafts && Object.keys(pr.drafts).length)) continue;
+    const edits = {};
+    for (const id in ed) edits[id] = Object.assign({}, ed[id], {mode: ed[id].mode || "review"});
+    pages[k] = {edits: edits};
+    if (pr.drafts && Object.keys(pr.drafts).length) pages[k].drafts = pr.drafts;
+  }
+  if (!Object.keys(pages).length) return;
+  const d = new Date(), pad = x => String(x).padStart(2, "0");
+  const stamp = d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + "-" + pad(d.getHours()) + pad(d.getMinutes());
+  dl("校書臺_進度備份_" + ($("who").value.trim() || "未署名") + "_" + stamp + ".json",
+     JSON.stringify({version:"0.6", annotator: $("who").value.trim(), ts: d.toISOString(), pages: pages}, null, 1), "application/json");
+}
+$("clearProg").onclick = () => {
+  let n = 0;
+  for (const k in state.progress) n += Object.keys(state.progress[k].edits || {}).length;
+  if (!confirm(fmt(t("clear_confirm"), {n:n}))) return;
+  backupProgress();
+  try{ localStorage.removeItem(STORE_KEY); }catch(err){}
+  state.progress = {};
+  // 清空時若有頁面開著，替它補回空進度，否則之後的判定會因找不到 edits 而失效
+  if (state.pi >= 0) state.progress[curPage().name] = {edits:{}, idx:state.idx};
+  renderPageList(); if (state.pi >= 0) show();
+};
+
+/* ============ XML 解析 ============ */
+function ptsFromString(s){
+  return s.trim().split(/\s+/).map(p => {
+    const a = p.split(","); return [Number(a[0]), Number(a[1])];
+  }).filter(p => isFinite(p[0]) && isFinite(p[1]));
+}
+function bboxOf(pts){
+  const xs = pts.map(p=>p[0]), ys = pts.map(p=>p[1]);
+  const x = Math.min.apply(null, xs), y = Math.min.apply(null, ys);
+  return {x:x, y:y, w:Math.max.apply(null,xs)-x, h:Math.max.apply(null,ys)-y};
+}
+function customType(el){
+  const c = el.getAttribute("custom") || "";
+  const m = c.match(/structure\s*\{[^}]*type\s*:\s*([^;}\s]+)/);
+  return m ? m[1] : (el.getAttribute("type") || "");
+}
+function customOrder(el){
+  const c = el.getAttribute("custom") || "";
+  const m = c.match(/readingOrder\s*\{[^}]*index\s*:\s*(\d+)/);
+  return m ? parseInt(m[1],10) : null;
+}
+function directChild(el, name){
+  for (let i=0;i<el.children.length;i++) if (el.children[i].localName === name) return el.children[i];
+  return null;
+}
+function parsePAGE(doc){
+  const regions = [], lines = [];
+  const order = {};
+  const ro = doc.getElementsByTagNameNS("*","OrderedGroup")[0];
+  if (ro){
+    const rr = ro.getElementsByTagNameNS("*","RegionRefIndexed");
+    for (let i=0;i<rr.length;i++) order[rr[i].getAttribute("regionRef")] = parseInt(rr[i].getAttribute("index"),10);
+  }
+  const pageEl = doc.getElementsByTagNameNS("*","Page")[0];
+  const imageFilename = pageEl ? (pageEl.getAttribute("imageFilename")||"") : "";
+  const natW = pageEl ? +pageEl.getAttribute("imageWidth") : 0;
+  const natH = pageEl ? +pageEl.getAttribute("imageHeight") : 0;
+  const regEls = doc.getElementsByTagNameNS("*","TextRegion");
+  for (let i=0;i<regEls.length;i++){
+    const r = regEls[i];
+    const id = r.getAttribute("id") || ("r"+(i+1));
+    const co = directChild(r, "Coords");
+    const pts = co && co.getAttribute("points") ? ptsFromString(co.getAttribute("points")) : [];
+    const raw = customType(r);
+    const ord = (id in order) ? order[id] : (customOrder(r) !== null ? customOrder(r) : i);
+    regions.push({id:id, raw:raw, type:NORM_REGION[raw] || raw || "Main", pts:pts,
+                  bb: pts.length ? bboxOf(pts) : null, ord:ord, seq:i});
+  }
+  const regById = {}; regions.forEach(r => regById[r.id] = r);
+  const lnEls = doc.getElementsByTagNameNS("*","TextLine");
+  for (let i=0;i<lnEls.length;i++){
+    const tl = lnEls[i];
+    const co = directChild(tl, "Coords");
+    if (!co || !co.getAttribute("points")) continue;
+    const pts = ptsFromString(co.getAttribute("points"));
+    if (pts.length < 3) continue;
+    let text = "";
+    const te = directChild(tl, "TextEquiv");
+    if (te){ const u = directChild(te, "Unicode"); if (u) text = u.textContent || ""; }
+    const par = tl.parentElement;
+    const rid = (par && par.localName === "TextRegion") ? par.getAttribute("id") : null;
+    const reg = rid ? regById[rid] : null;
+    const raw = customType(tl);
+    const lo = customOrder(tl);
+    lines.push({
+      id: tl.getAttribute("id") || ("l"+(i+1)),
+      pts: pts, ...bboxOf(pts),
+      text: text.trim(),
+      regionId: rid, regionRaw: reg ? reg.raw : "", regionType: reg ? reg.type : "",
+      lineRaw: raw, lineType: NORM_LINE[raw] !== undefined ? NORM_LINE[raw] : (raw || "Main"),
+      rOrd: reg ? reg.ord : 9999, lOrd: (lo !== null ? lo : i), seq: i
+    });
+  }
+  return {lines:lines, regions:regions, imageFilename:imageFilename, natW:natW, natH:natH, format:"PAGE"};
+}
+function parseALTO(doc){
+  const tagMap = {};
+  const ot = doc.getElementsByTagNameNS("*","OtherTag");
+  for (let i=0;i<ot.length;i++) tagMap[ot[i].getAttribute("ID")] = ot[i].getAttribute("LABEL") || "";
+  const fnEl = doc.getElementsByTagNameNS("*","fileName")[0];
+  const imageFilename = fnEl ? (fnEl.textContent||"").trim() : "";
+  const pageEl = doc.getElementsByTagNameNS("*","Page")[0];
+  const natW = pageEl ? +pageEl.getAttribute("WIDTH") : 0;
+  const natH = pageEl ? +pageEl.getAttribute("HEIGHT") : 0;
+  function tagOf(el){
+    const tr = (el.getAttribute("TAGREFS")||"").trim().split(/\s+/);
+    for (const t of tr) if (tagMap[t]) return tagMap[t];
+    return "";
+  }
+  function boxOf(el){
+    const poly = directChild(el, "Shape") ? directChild(directChild(el,"Shape"), "Polygon") : null;
+    if (poly && poly.getAttribute("POINTS")){
+      const raw = poly.getAttribute("POINTS").trim();
+      const nums = raw.split(/[\s,]+/).map(Number);
+      const pts = [];
+      for (let i=0;i+1<nums.length;i+=2) pts.push([nums[i], nums[i+1]]);
+      if (pts.length >= 3) return pts;
+    }
+    const x = +el.getAttribute("HPOS"), y = +el.getAttribute("VPOS");
+    const w = +el.getAttribute("WIDTH"), h = +el.getAttribute("HEIGHT");
+    if (isFinite(x) && isFinite(y) && w && h) return [[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+    return null;
+  }
+  const regions = [], lines = [];
+  const blocks = doc.getElementsByTagNameNS("*","TextBlock");
+  const blkById = {};
+  for (let i=0;i<blocks.length;i++){
+    const b = blocks[i];
+    const id = b.getAttribute("ID") || ("b"+(i+1));
+    const pts = boxOf(b) || [];
+    const raw = tagOf(b);
+    const r = {id:id, raw:raw, type:NORM_REGION[raw] || raw || "Main", pts:pts,
+               bb: pts.length ? bboxOf(pts) : null, ord:i, seq:i};
+    regions.push(r); blkById[id] = r;
+  }
+  const lnEls = doc.getElementsByTagNameNS("*","TextLine");
+  for (let i=0;i<lnEls.length;i++){
+    const tl = lnEls[i];
+    const pts = boxOf(tl);
+    if (!pts) continue;
+    const strs = tl.getElementsByTagNameNS("*","String");
+    const txt = [];
+    for (let j=0;j<strs.length;j++) txt.push(strs[j].getAttribute("CONTENT")||"");
+    const par = tl.parentElement;
+    const rid = (par && par.localName === "TextBlock") ? par.getAttribute("ID") : null;
+    const reg = rid ? blkById[rid] : null;
+    const raw = tagOf(tl);
+    lines.push({
+      id: tl.getAttribute("ID") || ("l"+(i+1)),
+      pts: pts, ...bboxOf(pts),
+      text: txt.join("").trim(),
+      regionId: rid, regionRaw: reg ? reg.raw : "", regionType: reg ? reg.type : "",
+      lineRaw: raw, lineType: NORM_LINE[raw] !== undefined ? NORM_LINE[raw] : (raw || "Main"),
+      rOrd: reg ? reg.ord : 9999, lOrd: i, seq: i
+    });
+  }
+  return {lines:lines, regions:regions, imageFilename:imageFilename, natW:natW, natH:natH, format:"ALTO"};
+}
+function parseXMLText(t){
+  const doc = new DOMParser().parseFromString(t, "application/xml");
+  if (doc.getElementsByTagName("parsererror").length) throw new Error("bad xml");
+  const root = doc.documentElement.localName;
+  const p = (root === "alto") ? parseALTO(doc) : parsePAGE(doc);
+  p.lines.sort((a,b) => (a.rOrd - b.rOrd) || (a.lOrd - b.lOrd) || (a.seq - b.seq));
+  return p;
+}
+
+/* ============ 桌面版：記住載入過的資料夾 ============ */
+/* 桌面版（Electron）的 preload 提供 jiaoshutaiDesktop：取得所選檔案的路徑、存取頁面清單、讀回這些檔案。
+   重新打開時，頁面清單由記下的路徑重建；檔案在打開該頁時才讀取。瀏覽器版沒有這個物件，一切照舊。 */
+const desktop = window.jiaoshutaiDesktop || null;
+if (desktop) $("helpStart").setAttribute("data-i18n-html", "help_start_p_desktop");
+/* 「本頁盲轉寫」開關只給桌面版（專案負責人自己用）；PWA 的盲轉寫頁仍只由 blind_pages.txt 指定，DOM 裡沒有這個按鈕 */
+if (desktop){
+  const b = document.createElement("button");
+  b.className = "btn small blindToggle"; b.id = "blindToggle"; b.type = "button";
+  b.setAttribute("data-i18n", "blind_toggle"); b.setAttribute("aria-pressed", "false");
+  $("btnToList").after(b);
+  b.onclick = toggleBlind;
+}
+function diskFile(path, name){
+  return {name: name, path: path, disk: true,
+          blob: async () => new Blob([await desktop.readFile(path)]),
+          text: async () => new TextDecoder().decode(await desktop.readFile(path))};
+}
+function filePath(f){
+  if (!desktop || !f) return "";
+  if (f.disk) return f.path;
+  try{ return desktop.pathOf(f) || ""; }catch(err){ return ""; }
+}
+function rememberPages(){
+  if (!desktop){ if (FSA) rememberPagesFSA(); return; }
+  const pages = [];
+  for (const p of state.pages){
+    const img = filePath(p.imgFile), xml = filePath(p.xmlFile);
+    if (img && xml) pages.push({name:p.name, img:img, xml:xml, xmlName:p.xmlName});
+  }
+  const curP = curPage();
+  desktop.savePages({pages:pages, blind:Array.from(state.blind), current: curP ? curP.name : ""}).catch(() => {});
+}
+async function restorePages(){
+  if (!desktop) return;
+  let m = null;
+  try{ m = await desktop.loadPages(); }catch(err){ return; }
+  if (!m || state.pages.length) return; // 啟動中已經選了資料夾：以新選的為準
+  const pages = (m.pages || []).map(r => ({name:r.name, imgFile:diskFile(r.img, r.img.split("/").pop()),
+                                          xmlFile:diskFile(r.xml, r.xmlName), xmlName:r.xmlName}));
+  if (!pages.length && !m.missing) return;
+  pages.sort((a,b) => coll.compare(a.name, b.name));
+  state.pages = pages;
+  state.blind = new Set((m.blind || []).filter(n => pages.some(p => p.name === n)));
+  for (const p of pages) if (state.blind.has(p.name)){ try{ await ensureParsed(p); }catch(err){} }
+  const note = $("pairNote");
+  note.className = m.missing ? "banner warn" : "banner ok";
+  note.textContent = fmt(t("restored_note"), {n:pages.length}) + (m.missing ? sentenceGap() + fmt(t("restored_missing"), {n:m.missing}) : "");
+  renderPageList();
+  const i = pages.findIndex(p => p.name === m.current);
+  if (!langModalOpen()){
+    if (i >= 0) await openPage(i);
+    else goTab("P");
+  }
+  if (m.missing) rememberPages(); // 找不到的頁不再記著
+}
+/* ============ 瀏覽器版記住頁面清單（File System Access + IndexedDB） ============ */
+/* Chrome 用 showDirectoryPicker 選資料夾，資料夾 handle 可以存進 IndexedDB。下次打開時先取得讀取權限
+   （已允許「每次造訪」就不必再問；否則要使用者按一下「重新開啟」），再照存下的相對路徑找回每頁的圖片與 XML。
+   沒有這個 API 的瀏覽器維持原來的檔案選擇方式，頁面清單不保存。 */
+const FSA = !desktop && typeof window.showDirectoryPicker === "function";
+if (FSA) $("helpStart").setAttribute("data-i18n-html", "help_start_p_fsa");
+const fsRoots = [];       // 選過的資料夾（或單一檔案）handle；檔案的 _ref.root 指向這裡
+let pendingRestore = null; // 等待讀取權限的上次清單
+const IDB_STORE = "kv", IDB_KEY = "pages";
+let idbConn = null;
+function idb(){
+  if (idbConn) return idbConn;
+  return idbConn = new Promise((res, rej) => {
+    const r = indexedDB.open("jiaoshutai", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(IDB_STORE);
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function idbGet(k){
+  const db = await idb();
+  return new Promise((res, rej) => { const q = db.transaction(IDB_STORE).objectStore(IDB_STORE).get(k);
+    q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+}
+async function idbPut(k, v){
+  const db = await idb();
+  return new Promise((res, rej) => { const tx = db.transaction(IDB_STORE, "readwrite"); tx.objectStore(IDB_STORE).put(v, k);
+    tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+}
+async function addRoot(h){
+  for (let i = 0; i < fsRoots.length; i++) if (await fsRoots[i].isSameEntry(h)) return i;
+  fsRoots.push(h); return fsRoots.length - 1;
+}
+// 與 webkitdirectory 一樣包含子資料夾
+async function walkDir(dir, ri, path, out){
+  for await (const [name, h] of dir.entries()){
+    if (h.kind === "directory") await walkDir(h, ri, path.concat(name), out);
+    else { const f = await h.getFile(); f._ref = {root:ri, path:path.concat(name)}; out.push(f); }
+  }
+}
+async function pickFolder(mode){
+  let h;
+  try{ h = await window.showDirectoryPicker({id:"jiaoshutai-" + mode, mode:"read"}); }catch(err){ return; } // 取消
+  const files = [];
+  try{ await walkDir(h, await addRoot(h), [], files); }catch(err){ return; }
+  await bindFolders(files, mode);
+}
+async function pickFiles(){
+  let hs;
+  try{ hs = await window.showOpenFilePicker({id:"jiaoshutai-files", multiple:true}); }catch(err){ return; }
+  const files = [];
+  for (const h of hs){ const f = await h.getFile(); f._ref = {root: await addRoot(h), path:[]}; files.push(f); }
+  await bindFolders(files, "both");
+}
+if (FSA){
+  // 原本的 <label> 會打開隱藏的 <input type=file>；改用 File System Access 選擇器，才拿得到可保存的 handle
+  const via = (id, fn) => $(id).closest("label").addEventListener("click", e => { e.preventDefault(); fn(); });
+  via("dirBoth", () => pickFolder("both"));
+  via("dirImg",  () => pickFolder("img"));
+  via("dirXml",  () => pickFolder("xml"));
+  via("filesAny", pickFiles);
+}
+async function refHandle(ref, roots){
+  let h = roots[ref.root];
+  if (h.kind === "file") return h;
+  for (let i = 0; i < ref.path.length - 1; i++) h = await h.getDirectoryHandle(ref.path[i]);
+  return h.getFileHandle(ref.path[ref.path.length - 1]);
+}
+// 重新載入的頁：用到時才從磁碟讀
+function refFile(ref, name){
+  return {name:name, _ref:ref, blob: async () => (await refHandle(ref, fsRoots)).getFile(),
+          text: async () => (await (await refHandle(ref, fsRoots)).getFile()).text()};
+}
+let fsaSaving = Promise.resolve();
+function rememberPagesFSA(){
+  const roots = [], idx = new Map();
+  const put = (h, ref) => { if (!idx.has(h)){ idx.set(h, roots.length); roots.push(h); } return {root:idx.get(h), path:ref.path}; };
+  const pages = [];
+  for (const p of state.pages){
+    const a = p.imgFile && p.imgFile._ref, b = p.xmlFile && p.xmlFile._ref;
+    if (a && b) pages.push({name:p.name, xmlName:p.xmlName, img:put(fsRoots[a.root], a), xml:put(fsRoots[b.root], b)});
+  }
+  // 還在等權限的上次清單照樣保留，免得在允許之前選了新資料夾就把它蓋掉
+  const pr = pendingRestore;
+  if (pr) for (const r of pr.pages) if (!state.pages.some(p => p.name === r.name))
+    pages.push({name:r.name, xmlName:r.xmlName, img:put(pr.roots[r.img.root], r.img), xml:put(pr.roots[r.xml.root], r.xml)});
+  const blind = Array.from(state.blind).concat(pr ? (pr.blind || []).filter(n => !state.pages.some(p => p.name === n)) : []);
+  const curP = curPage();
+  const rec = {roots:roots, pages:pages, blind:blind, current: curP ? curP.name : (pr ? pr.current : "")};
+  fsaSaving = fsaSaving.then(() => idbPut(IDB_KEY, rec)).catch(() => {});
+}
+async function restorePagesFSA(){
+  if (!FSA) return;
+  let m = null;
+  try{ m = await idbGet(IDB_KEY); }catch(err){ return; }
+  if (!m || !m.pages || !m.pages.length) return;
+  let ok = true;
+  for (const h of m.roots){ try{ if (await h.queryPermission({mode:"read"}) !== "granted") ok = false; }catch(err){ ok = false; } }
+  pendingRestore = m;
+  if (ok) return finishRestoreFSA();
+  $("reopenText").textContent = fmt(t("reopen_note"), {n:m.pages.length});
+  $("reopenBar").className = "banner ok";
+  if (!langModalOpen() && !state.pages.length) goTab("P");
+}
+$("reopenBtn").onclick = async () => {
+  const m = pendingRestore; if (!m) return;
+  for (const h of m.roots){
+    let r = "denied";
+    try{ r = await h.queryPermission({mode:"read"}); if (r !== "granted") r = await h.requestPermission({mode:"read"}); }catch(err){}
+    if (r !== "granted"){ $("reopenText").textContent = t("reopen_denied"); $("reopenBar").className = "banner warn"; return; }
+  }
+  await finishRestoreFSA();
+};
+async function finishRestoreFSA(){
+  const m = pendingRestore; if (!m) return;
+  const map = [];
+  for (const h of m.roots) map.push(await addRoot(h));
+  const have = new Set(state.pages.map(p => p.name));
+  const pages = []; let missing = 0;
+  for (const r of m.pages){
+    if (have.has(r.name)) continue;
+    const img = {root:map[r.img.root], path:r.img.path}, xml = {root:map[r.xml.root], path:r.xml.path};
+    try{ await refHandle(img, fsRoots); await refHandle(xml, fsRoots); }catch(err){ missing++; continue; }
+    const imgName = img.path.length ? img.path[img.path.length - 1] : fsRoots[img.root].name;
+    pages.push({name:r.name, imgFile:refFile(img, imgName), xmlFile:refFile(xml, r.xmlName), xmlName:r.xmlName});
+  }
+  pendingRestore = null;
+  $("reopenBar").className = "banner ok hidden";
+  const wasEmpty = !state.pages.length;
+  const curP = curPage();
+  state.pages = state.pages.concat(pages).sort((a,b) => coll.compare(a.name, b.name));
+  if (curP) state.pi = state.pages.indexOf(curP);
+  for (const n of (m.blind || [])) if (pages.some(p => p.name === n)) state.blind.add(n);
+  for (const p of pages) if (state.blind.has(p.name)){ try{ await ensureParsed(p); }catch(err){} }
+  const note = $("pairNote");
+  note.className = missing ? "banner warn" : "banner ok";
+  note.textContent = fmt(t("restored_note"), {n:pages.length}) + (missing ? sentenceGap() + fmt(t("restored_missing"), {n:missing}) : "");
+  renderPageList();
+  rememberPages();
+  if (wasEmpty && !langModalOpen()){
+    const i = state.pages.findIndex(p => p.name === m.current);
+    if (i >= 0) await openPage(i); else goTab("P");
+  }
+}
+const sentenceGap = () => LANG === "en" ? " " : ""; // 中文句號後不空格
+function closeWork(){
+  if (state.imgURL){ URL.revokeObjectURL(state.imgURL); state.imgURL = null; }
+  state.pi = -1;
+  $("workArea").classList.add("hidden"); $("emptyHint").classList.remove("hidden");
+}
+$("clearPages").onclick = () => {
+  state.pages = []; state.blind = new Set(); state.blindUnmatched = [];
+  pending = {imgs:[], xmls:[], blind:null};
+  pendingRestore = null; $("reopenBar").className = "banner ok hidden";
+  closeWork();
+  $("pairNote").className = "banner ok hidden";
+  renderPageList();
+  rememberPages();
+};
+
+/* ============ 資料夾配對 ============ */
+const BLIND_FILE = "blind_pages.txt";
+function collect(fileList){
+  const imgs = [], xmls = []; let blind = null;
+  for (const f of fileList){
+    if (IMG_EXT.test(f.name)) imgs.push(f);
+    else if (XML_EXT.test(f.name)) xmls.push(f);
+    else if (f.name.toLowerCase() === BLIND_FILE) blind = f;
+  }
+  return {imgs:imgs, xmls:xmls, blind:blind};
+}
+/* 還沒配上的圖片與 XML 都留在 pending，之後選的資料夾一起配對，所以先選幾個 XML 資料夾、再選圖片資料夾也可以。
+   blind 是 blind_pages.txt，或其中對應頁還在等配對的頁名。 */
+let pending = {imgs:[], xmls:[], blind:null};
+// 同名檔案以新選的為準
+function addWaiting(list, files){
+  const names = new Set(files.map(f => f.name.toLowerCase()));
+  return list.filter(f => !names.has(f.name.toLowerCase())).concat(files);
+}
+async function bindFolders(fileList, mode){
+  const got = collect(fileList);
+  if (mode !== "xml") pending.imgs = addWaiting(pending.imgs, got.imgs);
+  if (mode !== "img") pending.xmls = addWaiting(pending.xmls, got.xmls);
+  if (got.blind) pending.blind = got.blind;
+  if (!pending.imgs.length || !pending.xmls.length){
+    $("pairNote").className = "banner warn";
+    $("pairNote").textContent = fmt(t("got_msg"), {i:pending.imgs.length, x:pending.xmls.length});
+    return;
+  }
+  await pairAndBuild();
+}
+async function pairAndBuild(){
+  const xmlByBase = {};
+  for (const f of pending.xmls) xmlByBase[baseName(f.name).toLowerCase()] = f;
+  const used = new Set();
+  const pages = [], noXml = [];
+  for (const im of pending.imgs){
+    const b = baseName(im.name).toLowerCase();
+    let x = xmlByBase[b];
+    if (!x){
+      // 容忍常見後綴差異
+      for (const k in xmlByBase){
+        if (used.has(k)) continue;
+        if (k === b || k.replace(/[_-](page|alto|pagexml|xml)$/,"") === b){ x = xmlByBase[k]; break; }
+      }
+    }
+    if (x){ used.add(baseName(x.name).toLowerCase()); pages.push({name: baseName(im.name), imgFile: im, xmlFile: x, xmlName: x.name}); }
+    else noXml.push(im.name);
+  }
+  // 仍未配上的 XML：讀 imageFilename 再試一次
+  const leftXml = pending.xmls.filter(f => !used.has(baseName(f.name).toLowerCase()));
+  if (leftXml.length && noXml.length){
+    const imgByName = {};
+    for (const im of pending.imgs) imgByName[im.name.toLowerCase()] = im;
+    for (const f of leftXml){
+      try{
+        const p = parseXMLText(await f.text());
+        const target = (p.imageFilename||"").split(/[\\/]/).pop().toLowerCase();
+        if (target && imgByName[target] && noXml.indexOf(imgByName[target].name) >= 0){
+          pages.push({name: baseName(imgByName[target].name), imgFile: imgByName[target], xmlFile: f, xmlName: f.name});
+          noXml.splice(noXml.indexOf(imgByName[target].name), 1);
+          used.add(baseName(f.name).toLowerCase());
+        }
+      }catch(err){ /* 跳過壞檔 */ }
+    }
+  }
+  // 新資料夾的頁加進現有清單；同名頁（例如重選同一個資料夾）以新選的檔案為準
+  const curP = curPage();
+  const byName = new Map(state.pages.map(p => [p.name, p]));
+  for (const p of pages) byName.set(p.name, p);
+  state.pages = Array.from(byName.values()).sort((a,b) => coll.compare(a.name, b.name));
+  if (curP){
+    state.pi = state.pages.indexOf(curP);
+    if (state.pi < 0) closeWork(); // 正在看的頁被重新載入：關掉舊的畫面，從清單重開
+  }
+  // 配上的離開 pending，其餘繼續等
+  const paired = new Set(pages.map(p => p.imgFile));
+  pending.imgs = pending.imgs.filter(f => !paired.has(f));
+  pending.xmls = pending.xmls.filter(f => !used.has(baseName(f.name).toLowerCase()));
+  await loadBlindList(pages);
+  const orphanXml = pending.xmls.map(f => f.name);
+  const note = $("pairNote");
+  note.classList.remove("hidden");
+  if (noXml.length || orphanXml.length){
+    note.className = "banner warn";
+    note.innerHTML = fmt(t("pair_head"), {n:pages.length}) +
+      (noXml.length ? fmt(t("pair_no_xml"), {n:noXml.length, list:noXml.slice(0,8).join(t("sep")), more:(noXml.length>8?t("ellipsis"):"")}) : "") +
+      (orphanXml.length ? fmt(t("pair_orphan"), {n:orphanXml.length, list:orphanXml.slice(0,8).join(t("sep")), more:(orphanXml.length>8?t("ellipsis"):"")}) : "") +
+      t("pair_later");
+  } else {
+    note.className = "banner ok";
+    note.textContent = fmt(t("pair_ok"), {n:pages.length});
+  }
+  if (state.pages.length > pages.length) note.innerHTML += sentenceGap() + fmt(t("pair_total"), {n:state.pages.length});
+  const bu = state.blindUnmatched;
+  if (bu.length){
+    note.className = "banner warn";
+    note.innerHTML += "<br>" + fmt(t("blind_unmatched"), {n:bu.length, list:bu.slice(0,8).join(t("sep")), more:(bu.length>8?t("ellipsis"):"")});
+  }
+  renderPageList();
+  rememberPages();
+  goTab("P");
+}
+$("dirBoth").onchange = e => bindFolders(e.target.files, "both");
+$("dirImg").onchange  = e => bindFolders(e.target.files, "img");
+$("dirXml").onchange  = e => bindFolders(e.target.files, "xml");
+$("filesAny").onchange = e => bindFolders(e.target.files, "both");
+
+/* ============ 盲轉寫（IAA，字符規範 §8） ============ */
+/* 工作資料夾裡的 blind_pages.txt（每行一個頁名）指定盲轉寫頁。這些頁全部完成之前：
+   盲轉寫頁只給空白錄文框，其他頁鎖定；任何分頁都不把既有轉寫寫進 DOM。
+   「完成」指該頁每一列都有盲轉寫紀錄（mode 為 blind，或覆核後保留在 blind 欄位）。 */
+async function loadBlindList(pages){
+  const fresh = new Set(pages.map(p => p.name));
+  state.blind = new Set(Array.from(state.blind).filter(n => !fresh.has(n) && state.pages.some(p => p.name === n)));
+  state.blindUnmatched = [];
+  if (!pending.blind) return;
+  let names = pending.blind;
+  if (!Array.isArray(names)){
+    let txt = "";
+    try{ txt = await names.text(); }catch(err){ pending.blind = null; return; }
+    names = txt.replace(/^\uFEFF/, "").split(/\r?\n/).map(n => n.trim()).filter(n => n && n[0] !== "#");
+  }
+  const byName = {};
+  pages.forEach(p => { byName[p.name.toLowerCase()] = p; byName[baseName(p.xmlName).toLowerCase()] = p; });
+  const waiting = new Set(pending.imgs.concat(pending.xmls).map(f => baseName(f.name).toLowerCase()));
+  const later = [];
+  for (const n of names){
+    const p = byName[n.toLowerCase()] || byName[baseName(n).toLowerCase()];
+    if (p) state.blind.add(p.name);
+    else if (waiting.has(n.toLowerCase()) || waiting.has(baseName(n).toLowerCase())) later.push(n); // \u5C0D\u61C9\u7684\u9801\u9084\u5728\u7B49\u914D\u5C0D
+    else state.blindUnmatched.push(n);
+  }
+  pending.blind = later.length ? later : null;
+  // 先解析盲轉寫頁，才知道各頁列數、能判斷是否完成
+  for (const p of pages) if (state.blind.has(p.name)){ try{ await ensureParsed(p); }catch(err){} }
+}
+function blindDone(e){ return !!e && (e.mode === "blind" || !!e.blind); }
+function blindPageFinished(p){
+  if (!p.parsed) return true; // XML 讀不了的頁無從轉寫，不擋住其他頁
+  const ed = (state.progress[p.name] || {}).edits || {};
+  return p.parsed.lines.every(L => blindDone(ed[L.id]));
+}
+function blindRemaining(){ return state.pages.filter(p => state.blind.has(p.name) && !blindPageFinished(p)).length; }
+function blindLocked(){ return state.blind.size > 0 && blindRemaining() > 0; }
+/* 頁面當前模式："review" 一般覆核；"blind" 盲轉寫；"locked" 盲轉寫未完成時的其他頁 */
+function pageMode(p){
+  if (!p || !blindLocked()) return "review";
+  return state.blind.has(p.name) ? "blind" : "locked";
+}
+/* 桌面版開關：把當前頁加入或移出盲轉寫頁。已有覆核紀錄的頁不能改成盲轉寫（盲轉寫紀錄會蓋掉覆核紀錄，且既有轉寫已經看過）；
+   盲轉寫未完成就關閉，先確認，因為既有轉寫可能隨即顯示。清單存進 pages.json，下次打開仍在。 */
+function toggleBlind(){
+  const p = curPage(); if (!p) return;
+  if (state.blind.has(p.name)){
+    if (!blindPageFinished(p) && !confirm(t("blind_toggle_off_confirm"))) return;
+    state.blind.delete(p.name);
+  } else {
+    const ed = (state.progress[p.name] || {}).edits || {};
+    if (Object.values(ed).some(e => e.mode !== "blind")){ alert(t("blind_toggle_has_review")); return; }
+    state.blind.add(p.name);
+  }
+  show(); renderPageList(); rememberPages();
+}
+
+/* ============ 頁面清單 ============ */
+function pageStat(p){
+  const pr = state.progress[p.name];
+  const total = p.parsed ? p.parsed.lines.length : null;
+  const ed = pr ? (pr.edits || {}) : {};
+  const done = (pageMode(p) === "blind" && p.parsed) ? p.parsed.lines.filter(L => blindDone(ed[L.id])).length
+                                                      : Object.keys(ed).length;
+  return {done:done, total:total};
+}
+function renderPageList(){
+  const out = $("pageListOut");
+  if (!state.pages.length){ out.className="empty"; out.textContent = t("pl_empty"); return; }
+  out.className = "";
+  let h = '<table class="grid"><tr><th>#</th><th>'+t("pl_h_name")+'</th><th>'+t("pl_h_xml")+'</th><th>'+t("pl_h_lines")+'</th><th>'+t("pl_h_done")+'</th><th>'+t("pl_h_status")+'</th><th></th></tr>';
+  state.pages.forEach((p,i) => {
+    const s = pageStat(p);
+    const total = s.total === null ? "—" : s.total;
+    let cls = "", pill = '<span class="pill">'+t("pill_notstart")+'</span>';
+    if (s.total !== null && s.done >= s.total && s.total > 0){ pill = '<span class="pill done">'+t("pill_done")+'</span>'; cls = "doneRow"; }
+    else if (s.done > 0) pill = '<span class="pill part">'+t("pill_part")+'</span>';
+    const chip = state.blind.has(p.name) ? '<span class="pill blind">'+t("blind_chip")+'</span>' : '';
+    h += '<tr class="'+cls+'"><td>'+(i+1)+'</td><td class="serif">'+p.name+chip+'</td><td style="color:var(--ink2)">'+p.xmlName+
+         '</td><td>'+total+'</td><td>'+s.done+'</td><td>'+pill+
+         '</td><td><button class="btn small" data-go="'+i+'">'+(s.done?t("btn_continue"):t("btn_start"))+'</button></td></tr>';
+  });
+  h += "</table>";
+  out.innerHTML = h;
+  out.querySelectorAll("button[data-go]").forEach(b => b.onclick = () => openPage(+b.dataset.go));
+}
+
+/* ============ 開頁 ============ */
+async function ensureParsed(p){
+  if (p.parsed) return p.parsed;
+  const t = await p.xmlFile.text();
+  p.parsed = parseXMLText(t);
+  return p.parsed;
+}
+async function openPage(i){
+  const p = state.pages[i]; if (!p) return;
+  try{ await ensureParsed(p); }
+  catch(err){ alert(t("xml_unreadable") + p.xmlName); return; }
+  if (!p.parsed.lines.length){ alert(t("no_lines")); return; }
+  if (state.imgURL){ URL.revokeObjectURL(state.imgURL); state.imgURL = null; }
+  let imgBlob = p.imgFile;
+  if (!(imgBlob instanceof Blob)){
+    try{ imgBlob = await p.imgFile.blob(); }
+    catch(err){ alert(t("img_fail_pre") + p.imgFile.name + t("img_fail_suf")); return; }
+  }
+  state.imgURL = URL.createObjectURL(imgBlob);
+  const img = new Image();
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = state.imgURL; })
+    .catch(() => { alert(t("img_fail_pre") + p.imgFile.name + t("img_fail_suf")); });
+  state.img = img;
+  p.natW = img.naturalWidth || p.parsed.natW;
+  p.natH = img.naturalHeight || p.parsed.natH;
+  state.pi = i;
+  if (!state.progress[p.name]) state.progress[p.name] = {edits:{}, idx:0};
+  state.idx = Math.min(state.progress[p.name].idx || 0, p.parsed.lines.length - 1);
+  $("pageImg").src = state.imgURL;
+  $("workArea").classList.remove("hidden"); $("emptyHint").classList.add("hidden");
+  buildLocator();
+  show();
+  goTab("A");
+  renderPageList();
+  rememberPages();
+}
+function curPage(){ return state.pages[state.pi]; }
+function curLines(){ const p = curPage(); return p && p.parsed ? p.parsed.lines : []; }
+function cur(){ return curLines()[state.idx]; }
+function curEdits(){ const p = curPage(); return p ? (state.progress[p.name].edits) : {}; }
+function curEdit(){ const L = cur(); return L ? curEdits()[L.id] : null; }
+
+/* ============ 整頁定位圖 ============ */
+function buildLocator(){
+  const p = curPage(); if (!p) return;
+  const svg = $("locSvg");
+  svg.setAttribute("viewBox", "0 0 " + p.natW + " " + p.natH);
+  let h = "";
+  p.parsed.lines.forEach((L,i) => {
+    h += '<polygon class="lp" data-i="'+i+'" points="' + L.pts.map(q=>q[0]+","+q[1]).join(" ") + '"></polygon>';
+  });
+  svg.innerHTML = h;
+  svg.querySelectorAll("polygon").forEach(el => el.onclick = () => { state.idx = +el.dataset.i; show(); });
+}
+function paintLocator(){
+  const ed = curEdits();
+  const svg = $("locSvg");
+  svg.querySelectorAll("polygon").forEach(el => {
+    const i = +el.dataset.i, L = curLines()[i];
+    el.classList.toggle("on", i === state.idx);
+    el.classList.toggle("done", !!ed[L.id] && i !== state.idx);
+  });
+}
+
+/* ============ 列影像（多邊形精確裁切） ============ */
+function drawStrip(){
+  const L = cur(), p = curPage(); if (!L || !p || !state.img) return;
+  const ctxOn = $("ctxOn").checked;
+  const mx = ctxOn ? Math.max(L.w * 0.9, 40) : Math.max(L.w * 0.04, 3);
+  const my = ctxOn ? Math.max(L.h * 0.02, 20) : Math.max(L.h * 0.004, 3);
+  const bx = L.x - mx, by = L.y - my, bw = L.w + 2*mx, bh = L.h + 2*my;
+  const wide = bw > bh;
+  const frameH = wide ? 330 : 520;
+  const frameW = wide ? 460 : (ctxOn ? 360 : 230);
+  const fit = Math.min(frameH / bh, frameW / bw);
+  const sc = fit * state.zoom;
+  const dispW = Math.max(24, Math.round(bw * sc)), dispH = Math.max(24, Math.round(bh * sc));
+  const dpr = window.devicePixelRatio || 1;
+  const cv = $("zoomCanvas"), ctx = cv.getContext("2d");
+  cv.width = Math.round(dispW * dpr); cv.height = Math.round(dispH * dpr);
+  cv.style.width = dispW + "px"; cv.style.height = dispH + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, dispW, dispH);
+  const path = () => {
+    ctx.beginPath();
+    L.pts.forEach((q, i) => {
+      const X = (q[0] - bx) * sc, Y = (q[1] - by) * sc;
+      if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+    });
+    ctx.closePath();
+  };
+  ctx.save();
+  if (!ctxOn) { path(); ctx.clip(); }
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(state.img, 0, 0, p.natW, p.natH, -bx*sc, -by*sc, p.natW*sc, p.natH*sc);
+  ctx.restore();
+  if (ctxOn){ ctx.save(); path(); ctx.strokeStyle = "#B3261E"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore(); }
+  return dispH;
+}
+
+/* ============ 主畫面 ============ */
+let syncing = false;
+function linkScroll(a, b){
+  a.addEventListener("scroll", () => {
+    if (syncing) return; syncing = true;
+    const ra = a.scrollTop / Math.max(1, a.scrollHeight - a.clientHeight);
+    b.scrollTop = ra * Math.max(0, b.scrollHeight - b.clientHeight);
+    syncing = false;
+  });
+}
+linkScroll($("zoomWrap"), $("colWrap"));
+linkScroll($("colWrap"), $("zoomWrap"));
+
+function show(){
+  const p = curPage(), L = cur(); if (!p || !L) return;
+  const mode = pageMode(p);
+  const dispH = drawStrip() || 480;
+  // 盲轉寫頁只看得到本人的盲轉寫；鎖定的頁什麼文字都不顯示。既有轉寫（L.text）只在覆核模式進入 DOM
+  const e = shownEdit();
+  const txt = mode === "review" ? ((e && e.corrected) ? e.corrected : L.text) : ((e && e.corrected) || "");
+  const cE = $("colText");
+  cE.textContent = txt;
+  const n = Math.max(1, [...txt].length);
+  const fs = Math.max(14, Math.min(44, Math.floor(dispH / (n * 1.32))));
+  const horiz = cE.classList.contains("horiz");
+  cE.style.fontSize = fs + "px";
+  cE.style.whiteSpace = horiz ? "normal" : "nowrap";
+  cE.style.height = horiz ? "auto" : Math.max(dispH, Math.ceil(n * fs * 1.34)) + "px";
+  paintLocator();
+  const rt = LABEL_REGION[L.regionType] || (L.regionRaw || t("no_region"));
+  const lt = LABEL_LINE[L.lineType] || (L.lineRaw || t("no_type"));
+  $("lineMeta").innerHTML = '<span class="typeTag' + (L.regionType==="Figure" ? " fig" : "") + '">' + rt + '</span>' +
+    '<span class="typeTag' + (L.lineType==="figureLabel" ? " fig" : "") + '">' + lt + '</span>' +
+    t("line_word") + L.id + "　" + Math.round(L.w) + "×" + Math.round(L.h) + " px" +
+    (L.regionId ? t("region_word") + L.regionId : t("no_region_warn"));
+  let hint = HINT_LINE[L.lineType] || (t("hint_notonto_pre") + (L.lineRaw || t("empty_paren")) + t("hint_notonto_suf"));
+  if (txt.indexOf("□") >= 0) hint += t("hint_has_illegible");
+  if (txt.indexOf("〓") >= 0) hint += t("hint_has_geta");
+  $("typeHint").textContent = hint;
+  $("curNo").textContent = state.idx + 1; $("totNo").textContent = curLines().length;
+  const done = pageStat(p).done;
+  $("doneNo").textContent = fmt(t("done_count"), {n:done});
+  $("barFill").style.width = (done / curLines().length * 100) + "%";
+  const tag = $("vTag");
+  const d = e ? {} : (curDrafts()[L.id] || {});
+  $("lineNote").value = (e ? e.note : d.note) || "";
+  $("flagText").value = (e ? e.issue : d.issue) || "";
+  const hasIssue = !!$("flagText").value;
+  tag.textContent = tagText(e, hasIssue);
+  tag.classList.toggle("set", !!e);
+  tag.dataset.v = $("panelV").dataset.v = e ? (VCODE[e.verdict] || "") : "";
+  $("panelV").dataset.issue = hasIssue ? "1" : "";
+  $("fixWrap").classList.add("hidden"); $("flagWrap").classList.toggle("hidden", !hasIssue);
+  const locked = mode === "locked";
+  $("panelV").dataset.mode = mode;
+  const isTrans = mode === "blind" || (mode === "review" && !L.text && !(e && e.corrected));
+  $("transWrap").classList.toggle("hidden", !isTrans);
+  $("transWrap").querySelector(".prompt").classList.toggle("hidden", mode === "blind");
+  $("vOk").classList.toggle("hidden", isTrans);
+  $("vFix").classList.toggle("hidden", isTrans);
+  if (isTrans) $("transText").value = mode === "blind" ? txt : "";
+  $("askLine").classList.toggle("hidden", locked);
+  $("askLine").firstElementChild.classList.toggle("hidden", mode === "blind");
+  document.querySelector(".verdicts").classList.toggle("hidden", locked);
+  $("lineNote").classList.toggle("hidden", locked);
+  const bb = $("blindBanner");
+  bb.classList.toggle("hidden", mode === "review");
+  bb.textContent = mode === "blind" ? t("blind_banner") : (locked ? fmt(t("blind_locked"), {n:blindRemaining()}) : "");
+  $("pgName").textContent = p.name;
+  const bt = $("blindToggle");
+  if (bt){ const on = state.blind.has(p.name); bt.classList.toggle("on", on); bt.setAttribute("aria-pressed", on ? "true" : "false"); }
+  $("pgPos").textContent = fmt(t("pg_pos"), {a:state.pi+1, b:state.pages.length});
+  $("revisitBanner").classList.toggle("hidden", locked || done < curLines().length);
+  state.progress[p.name].idx = state.idx;
+}
+
+$("zoomRange").oninput = e => { state.zoom = e.target.value / 100; $("zoomPct").textContent = e.target.value + "%"; show(); };
+$("ctxOn").onchange = () => show();
+$("flip").onclick = () => { const c = $("colText"); c.classList.toggle("horiz");
+  $("flip").textContent = c.classList.contains("horiz") ? t("flip_to_vert") : t("flip_to_horiz"); show(); };
+
+/* ============ 判定 ============ */
+/* 判定 → 樣式代碼：verdict tag 顏色與按鈕選中底色 */
+const VCODE = {"正確":"ok", "修改":"fix", "不可辨":"blur", "異常":"flag", "轉寫":"trans"};
+function record(verdict, extra){
+  const L = cur(), p = curPage(); if (!L || !p) return;
+  const mode = pageMode(p);
+  if (mode === "locked") return;                                         // 鎖定的頁不能判定
+  if (mode === "blind" && (verdict === "正確" || verdict === "修改")) return; // 盲轉寫只能錄文（或整列不可辨、異常）
+  const prevE = curEdits()[L.id];
+  const rec = Object.assign({
+    page: p.name, line_id: L.id,
+    region_type: L.regionType, region_raw: L.regionRaw,
+    line_type: L.lineType, line_raw: L.lineRaw,
+    original: mode === "blind" ? "" : L.text, verdict: verdict, corrected: "",
+    note: $("lineNote").value.trim(), issue: $("flagText").value.trim(),
+    annotator: $("who").value.trim() || "未署名", ts: new Date().toISOString(),
+    mode: mode
+  }, extra || {});
+  // 盲轉寫之後再覆核，原來的盲轉寫保留在 blind 欄位，IAA 仍以它計算
+  if (mode === "review" && prevE && blindDone(prevE))
+    rec.blind = prevE.blind || {verdict:prevE.verdict, corrected:prevE.corrected, note:prevE.note, annotator:prevE.annotator, ts:prevE.ts};
+  curEdits()[L.id] = rec;
+  delete curDrafts()[L.id];
+  saveLocal();
+  show(); renderPageList(); // 留在本列：只有「下一列」才往下走
+}
+/* 目前畫面顯示的那筆判定（盲轉寫頁只顯示盲轉寫紀錄） */
+function shownEdit(){
+  const p = curPage(), mode = pageMode(p), e0 = curEdit();
+  return mode === "review" ? e0 : ((mode === "blind" && e0 && e0.mode === "blind") ? e0 : null);
+}
+/* 判定標籤；另有異常說明時加 ⚠ */
+function tagText(e, hasIssue){
+  return (e ? (t("verdict_"+e.verdict) || e.verdict) : t("vtag_unset")) + (hasIssue && !(e && e.verdict === "異常") ? " · ⚠" : "");
+}
+/* 尚未判定的列，備註與異常說明先存成草稿；判定時併入該列紀錄 */
+function curDrafts(){ const pr = state.progress[curPage().name]; return pr.drafts || (pr.drafts = {}); }
+/* 備註與異常說明邊打邊存：已判定的列直接寫進紀錄，未判定的列寫進草稿 */
+let saveTimer = null;
+function saveSoon(){ clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveTimer = null; saveLocal(); }, 400); }
+function liveSave(field, box){
+  box.addEventListener("input", () => {
+    const L = cur(), p = curPage(); if (!L || !p || pageMode(p) === "locked") return;
+    const v = box.value.trim(), e = shownEdit();
+    if (e) e[field] = v;
+    else {
+      const ds = curDrafts(), dd = ds[L.id] || (ds[L.id] = {});
+      dd[field] = v;
+      if (!dd.note && !dd.issue) delete ds[L.id];
+    }
+    if (field === "issue"){ $("panelV").dataset.issue = v ? "1" : ""; $("vTag").textContent = tagText(e, !!v); }
+    saveSoon();
+  });
+}
+liveSave("note", $("lineNote"));
+liveSave("issue", $("flagText"));
+function next(){
+  const N = curLines().length;
+  if (state.idx < N - 1){ state.idx++; show(); return; }
+  show(); renderPageList();
+  if (pageMode(curPage()) === "locked") return;
+  const done = pageStat(curPage()).done;
+  if (done >= N){
+    if (confirm(fmt(t("page_done_confirm"), {n:N}))) nextUndone();
+  } else {
+    alert(fmt(t("last_line_alert"), {n:(N - done)}));
+  }
+}
+function prev(){ if (state.idx > 0){ state.idx--; show(); } }
+function nextUndone(){
+  const locked = blindLocked(); // 盲轉寫未完成時，只找盲轉寫頁
+  for (let k = 1; k <= state.pages.length; k++){
+    const i = (state.pi + k) % state.pages.length;
+    const p = state.pages[i], s = pageStat(p);
+    if (locked && !state.blind.has(p.name)) continue;
+    if (s.total === null || s.done < s.total){ openPage(i); return; }
+  }
+  alert(t("all_done"));
+}
+$("vOk").onclick = () => record("正確");
+$("vBlur").onclick = () => record("不可辨");
+$("vFix").onclick = () => { if (pageMode(curPage()) !== "review") return; $("fixWrap").classList.remove("hidden"); $("panelV").dataset.v = "fix";
+  $("fixText").value = $("colText").textContent || ""; $("fixText").focus(); };
+$("fixSave").onclick = () => { const v = $("fixText").value.trim();
+  if (!v){ alert(t("fix_empty")); return; }
+  record("修改", {corrected: v}); };
+/* 異常反饋可與任何判定並存（例如紅框略有偏移，但轉寫無誤：照常判「一致」，再寫異常說明）。
+   尚未判定的列，提交反饋即記為「異常」；已判定的列保留原判定，只記下說明。 */
+$("vFlag").onclick = () => { if (pageMode(curPage()) === "locked") return;
+  $("flagWrap").classList.remove("hidden"); $("panelV").dataset.issue = "1"; $("flagText").focus(); };
+$("flagSave").onclick = () => {
+  const e = shownEdit();
+  if (!e){ record("異常"); return; }
+  e.issue = $("flagText").value.trim(); e.note = $("lineNote").value.trim();
+  saveLocal(); show();
+};
+$("transSave").onclick = () => { const v = $("transText").value.trim();
+  if (!v){ alert(t("trans_empty")); return; }
+  record("轉寫", {corrected: v}); };
+/* 佔位符：□ 字跡不可辨，〓 字可識而打不出（字符規範 §3）。插入到游標處：
+   按鈕插入它所在的錄文框；快捷鍵插入目前有游標的文字框，沒有時插入畫面上的錄文框 */
+function editBox(){
+  const a = document.activeElement;
+  if (a && a.tagName === "TEXTAREA" && a.offsetParent) return a;
+  for (const id of ["fixText", "transText"]) if ($(id).offsetParent) return $(id);
+  return null;
+}
+function insertSym(sym, box){
+  box = box || editBox(); if (!box) return;
+  box.focus();
+  box.setRangeText(sym, box.selectionStart, box.selectionEnd, "end");
+  box.dispatchEvent(new Event("input", {bubbles:true}));
+}
+document.querySelectorAll("[data-ins]").forEach(b => {
+  b.onmousedown = e => e.preventDefault(); // 不讓按鈕搶走錄文框的游標
+  b.onclick = () => insertSym(b.dataset.ins, b.closest("#fixWrap, #transWrap").querySelector(".editArea"));
+});
+$("prevBtn").onclick = prev; $("nextBtn").onclick = next;
+$("btnNextUndone").onclick = nextUndone;
+$("btnPrevPage").onclick = () => { if (state.pi > 0) openPage(state.pi - 1); };
+$("btnToList").onclick = () => { renderPageList(); goTab("P"); };
+
+document.addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s"){ e.preventDefault(); exportJsonBook(); return; }
+  if (panes.A.classList.contains("hidden")) return;
+  // ⌥/Alt+1、⌥/Alt+2 插入佔位符（Ctrl+1、Ctrl+2 在 Chrome 與 macOS 已有用途）。用 e.code，不受鍵盤佈局與 ⌥ 字元影響
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.isComposing && (e.code === "Digit1" || e.code === "Digit2")){
+    e.preventDefault(); insertSym(e.code === "Digit1" ? "□" : "〓"); return;
+  }
+  if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return;
+  if (e.key === "Enter"){ e.preventDefault(); record("正確"); }
+  if (e.key === "ArrowLeft") prev();
+  if (e.key === "ArrowRight") next();
+});
+
+/* ============ 導出 ============ */
+function dl(name, blobOrText, mime){
+  const a = document.createElement("a");
+  const blob = (blobOrText instanceof Blob) ? blobOrText : new Blob([blobOrText], {type: mime || "text/plain;charset=utf-8"});
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function csvCell(s){ s = String(s == null ? "" : s); return '"' + s.replace(/"/g, '""') + '"'; }
+function toCsv(rows){ return "\uFEFF" + rows.map(r => r.map(csvCell).join(",")).join("\r\n"); }
+/* 「整本」導出的頁面：先解析資料夾裡所有頁面的 XML，本次沒有打開過的頁也一併導出
+   （v0.6 只導出本次打開過的頁，之前各次的進度會漏掉）。進度裡有、但目前資料夾中沒有
+   或 XML 讀不了的頁，以已判定的列導出，校對成果不會遺失。 */
+async function bookPages(){
+  const fromEdits = name => Object.values((state.progress[name] || {}).edits || {}).map(e => ({
+    id:e.line_id, text:e.original || "", regionType:e.region_type || "", regionRaw:e.region_raw || "",
+    lineType:e.line_type || "", lineRaw:e.line_raw || ""}));
+  const hasEdits = name => Object.keys((state.progress[name] || {}).edits || {}).length > 0;
+  const out = [], seen = new Set();
+  for (const p of state.pages){
+    seen.add(p.name);
+    try{ await ensureParsed(p); }catch(err){ /* XML 讀不了：改用已判定的列 */ }
+    if (p.parsed) out.push({name:p.name, lines:p.parsed.lines});
+    else if (hasEdits(p.name)) out.push({name:p.name, lines:fromEdits(p.name)});
+  }
+  Object.keys(state.progress).filter(k => !seen.has(k) && hasEdits(k)).sort(coll.compare)
+    .forEach(k => out.push({name:k, lines:fromEdits(k)}));
+  return out;
+}
+/* 每列導出時帶 mode：已判定的列取判定當時的模式，未判定的列取該頁目前的模式。
+   盲轉寫未完成時，導出檔不帶既有轉寫（候選文留空），以免在試算表裡先看到。 */
+function lineMode(pgName, e){
+  if (e && e.verdict) return e.mode || "review";
+  return (blindLocked() && state.blind.has(pgName)) ? "blind" : "review";
+}
+async function exportCsvBook(){
+  const rows = [["page","line_id","region_type","region_raw","line_type","line_raw","候選文","判定","修正後","備註","校對者","時間","mode","issue"]];
+  const hide = blindLocked();
+  for (const pg of await bookPages()){
+    const ed = (state.progress[pg.name] || {}).edits || {};
+    const dr = (state.progress[pg.name] || {}).drafts || {};
+    for (const L of pg.lines){
+      const e = ed[L.id] || dr[L.id] || {}; // 未判定的列帶出草稿裡的備註與異常說明
+      rows.push([pg.name, L.id, L.regionType, L.regionRaw, L.lineType, L.lineRaw,
+                 hide ? "" : L.text, e.verdict || "未校", e.corrected || "", e.note || "", e.annotator || "", e.ts || "",
+                 lineMode(pg.name, ed[L.id]), e.issue || ""]);
+    }
+  }
+  dl("校書臺_整本校對.csv", toCsv(rows), "text/csv;charset=utf-8");
+}
+async function exportJsonBook(){
+  const pages = {};
+  const hide = blindLocked();
+  for (const pg of await bookPages()){
+    const ed = (state.progress[pg.name] || {}).edits || {};
+    const edits = {};
+    for (const k in ed) edits[k] = Object.assign({}, ed[k], {mode: ed[k].mode || "review"});
+    pages[pg.name] = {
+      lines: pg.lines.map(L => ({id:L.id, text: hide ? "" : L.text, region_type:L.regionType, line_type:L.lineType,
+                                 mode: lineMode(pg.name, ed[L.id])})),
+      edits: edits
+    };
+    const dr = (state.progress[pg.name] || {}).drafts;
+    if (dr && Object.keys(dr).length) pages[pg.name].drafts = dr;
+  }
+  dl("校書臺_進度_" + ($("who").value.trim() || "未署名") + ".json",
+     JSON.stringify({version:"0.6", annotator: $("who").value.trim(), ts: new Date().toISOString(), pages: pages}, null, 1),
+     "application/json");
+  saveLocal();
+}
+$("expCsvBook").onclick = exportCsvBook;
+$("expJsonBook").onclick = exportJsonBook;
+$("expLinePng").onclick = () => {
+  const L = cur(), p = curPage(); if (!L || !p) return;
+  $("zoomCanvas").toBlob(b => { if (!b){ alert(t("canvas_fail")); return; }
+    dl(p.name + "_" + L.id + ".png", b); }, "image/png");
+};
+$("resumeFile").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(txt => {
+    const d = JSON.parse(txt);
+    if (d.pages){
+      for (const k in d.pages) state.progress[k] = {edits: normEdits(d.pages[k].edits || {}), idx: 0, drafts: d.pages[k].drafts || {}};
+    } else if (d.edits){ // 相容 v0.3 單頁進度
+      state.progress[baseName(d.image_name || "page")] = {edits: normEdits(d.edits), idx: d.idx || 0};
+    } else { alert(t("not_progress")); return; }
+    if (d.annotator) $("who").value = d.annotator;
+    saveLocal(); renderPageList();
+    alert(t("resume_ok"));
+  }).catch(() => alert(t("json_fail")));
+};
+$("who").onchange = saveLocal;
+
+/* ============ 資料自檢 ============ */
+function median(a){ if (!a.length) return 0; const s = a.slice().sort((x,y)=>x-y); const m = s.length>>1;
+  return s.length % 2 ? s[m] : (s[m-1]+s[m])/2; }
+function overlap1d(a0, a1, b0, b1){ return Math.max(0, Math.min(a1,b1) - Math.max(a0,b0)); }
+function auditPage(p){
+  const rows = [];
+  const add = (sev, lineId, kind, detail) => rows.push({page:p.name, sev:sev, line:lineId, kind:kind, detail:detail});
+  const L = p.parsed.lines, R = p.parsed.regions;
+  if (!L.length) add("錯誤", "", t("a_emptypage"), t("a_emptypage_d"));
+  /* 寬度中位數按「區域類型 + 列類型」分組計算。
+     圖文混排頁上，圖區小字數量常遠多於正文列，若混在一起取中位數，
+     正文列會被整批誤判為異常偏大。零散小字本身尺寸差異大，不做寬度檢查。 */
+  const grp = {};
+  L.forEach(l => { const k = l.regionType + "/" + l.lineType;
+    if (l.w > 0) (grp[k] = grp[k] || []).push(l.w); });
+  const medOf = {};
+  for (const k in grp) if (grp[k].length >= 5) medOf[k] = median(grp[k]);
+  const mwPage = median(L.map(l => l.w).filter(w => w > 0));
+  const seen = {};
+  L.forEach(l => {
+    if (seen[l.id]) add("錯誤", l.id, t("a_dupid"), t("a_dupid_d"));
+    seen[l.id] = 1;
+    if (l.pts.length < 4) add("提示", l.id, t("a_fewpts"), fmt(t("a_fewpts_d"), {n:l.pts.length}));
+    if (l.w <= 1 || l.h <= 1) add("錯誤", l.id, t("a_degen"), l.w + "×" + l.h);
+    if (!l.regionId) add("錯誤", l.id, t("a_noregion"), t("a_noregion_d"));
+    if (l.regionType && !(l.regionType in LABEL_REGION)) add("提示", l.id, t("a_region_notonto"), l.regionRaw);
+    if (!(l.lineType in LABEL_LINE)) add("提示", l.id, t("a_line_notonto"), l.lineRaw || t("empty_paren"));
+    if (l.regionType in LEGAL_NEST && (l.lineType in LABEL_LINE) && !LEGAL_NEST[l.regionType][l.lineType])
+      add("提示", l.id, t("a_nestbad"),
+          fmt(t("a_nestbad_d"), {r:(LABEL_REGION[l.regionType]||l.regionType), l:(LABEL_LINE[l.lineType]||l.lineType)}));
+    if (p.natW && (l.x < -2 || l.y < -2 || l.x + l.w > p.natW + 2 || l.y + l.h > p.natH + 2))
+      add("錯誤", l.id, t("a_outside"), "x " + Math.round(l.x) + " y " + Math.round(l.y));
+    const mw = medOf[l.regionType + "/" + l.lineType];
+    if (mw && l.lineType !== "figureLabel"){
+      if (l.w > mw * 2.2) add("提示", l.id, t("a_wide"), fmt(t("a_wide_d"), {w:Math.round(l.w), m:Math.round(mw)}));
+      if (l.w < mw * 0.45) add("提示", l.id, t("a_narrow"), fmt(t("a_narrow_d"), {w:Math.round(l.w), m:Math.round(mw)}));
+    }
+    if (!l.text) add("提示", l.id, t("a_notext"), t("a_notext_d"));
+  });
+  // 同區域內相鄰列重疊
+  const byReg = {};
+  L.forEach(l => { const k = l.regionId || "_"; (byReg[k] = byReg[k] || []).push(l); });
+  for (const k in byReg){
+    const arr = byReg[k];
+    for (let i = 0; i < arr.length; i++) for (let j = i+1; j < arr.length; j++){
+      const a = arr[i], b = arr[j];
+      const ox = overlap1d(a.x, a.x+a.w, b.x, b.x+b.w);
+      const oy = overlap1d(a.y, a.y+a.h, b.y, b.y+b.h);
+      if (!ox || !oy) continue;
+      const ratio = (ox*oy) / Math.max(1, Math.min(a.w*a.h, b.w*b.h));
+      if (ratio > 0.3) add("提示", a.id + " / " + b.id, t("a_overlap"), fmt(t("a_overlap_d"), {p:Math.round(ratio*100)}));
+    }
+    // 直書右起：同區域內中心 x 應遞減。圖區列間順序本就無關，不檢查。
+    const rType = (arr[0] && arr[0].regionType) || "";
+    if (rType === "Figure") continue;
+    const mw = medOf[rType + "/" + (arr[0] ? arr[0].lineType : "")] || mwPage;
+    let bad = 0;
+    for (let i = 1; i < arr.length; i++){
+      const cx0 = arr[i-1].x + arr[i-1].w/2, cx1 = arr[i].x + arr[i].w/2;
+      if (cx1 > cx0 + Math.max(4, mw*0.5)) bad++;
+    }
+    if (arr.length > 3 && bad > 0)
+      add("提示", fmt(t("region_id_label"), {id:k}), t("a_order"), fmt(t("a_order_d"), {n:arr.length, b:bad}));
+  }
+  R.forEach(r => {
+    const n = L.filter(l => l.regionId === r.id).length;
+    if (!n) add("提示", fmt(t("region_id_label"), {id:r.id}), t("a_emptyreg"), fmt(t("a_emptyreg_d"), {raw:(r.raw || t("empty_paren"))}));
+  });
+  return rows;
+}
+$("runAudit").onclick = async () => {
+  if (!state.pages.length){ alert(t("load_first")); return; }
+  const out = $("auditOut"); out.className = ""; out.textContent = t("checking");
+  const all = [];
+  for (const p of state.pages){
+    try{ await ensureParsed(p); all.push.apply(all, auditPage(p)); }
+    catch(err){ all.push({page:p.name, sev:"錯誤", line:"", kind:t("xml_parsefail"), detail:p.xmlName}); }
+  }
+  state.auditRows = all;
+  const nErr = all.filter(r => r.sev === "錯誤").length;
+  const nWarn = all.length - nErr;
+  const typeCount = {};
+  state.pages.forEach(p => { if (p.parsed) p.parsed.lines.forEach(l => {
+    const k = (l.regionType||"?") + " / " + (l.lineType||"?");
+    typeCount[k] = (typeCount[k]||0) + 1; }); });
+  let h = '<div class="agree">' + fmt(t("audit_summary"), {p:state.pages.length, e:nErr, w:nWarn}) + '</div>';
+  h += '<table class="grid"><tr><th>' + t("audit_th_combo") + '</th><th>' + t("audit_th_count") + '</th></tr>';
+  Object.keys(typeCount).sort().forEach(k => {
+    const nice = (LABEL_REGION[k.split(" / ")[0]] || k.split(" / ")[0]) + " / " + (LABEL_LINE[k.split(" / ")[1]] || k.split(" / ")[1]);
+    h += "<tr><td>" + nice + "　<span style='color:var(--ink2);font-size:13px'>" + k + "</span></td><td>" + typeCount[k] + "</td></tr>";
+  });
+  h += "</table>";
+  if (all.length){
+    h += '<table class="grid" style="margin-top:18px"><tr><th>' + t("th_page") + '</th><th>' + t("th_level") + '</th><th>' + t("th_line") + '</th><th>' + t("th_issue") + '</th><th>' + t("th_detail") + '</th></tr>';
+    all.slice(0, 400).forEach(r => {
+      h += "<tr><td class='serif'>" + r.page + "</td><td>" +
+        (r.sev === "錯誤" ? '<span class="pill err">'+t("sev_err")+'</span>' : '<span class="pill part">'+t("sev_warn")+'</span>') +
+        "</td><td>" + r.line + "</td><td>" + r.kind + "</td><td>" + r.detail + "</td></tr>";
+    });
+    h += "</table>";
+    if (all.length > 400) h += "<div style='margin-top:8px;color:var(--ink2)'>" + t("audit_truncate") + "</div>";
+  } else h += "<div>" + t("audit_none") + "</div>";
+  out.innerHTML = h;
+};
+$("expAudit").onclick = () => {
+  if (!state.auditRows.length){ alert(t("run_first")); return; }
+  const rows = [["page","severity","line","issue","detail"]].concat(
+    state.auditRows.map(r => [r.page, r.sev, r.line, r.kind, r.detail]));
+  dl("校書臺_自檢報告.csv", toCsv(rows), "text/csv;charset=utf-8");
+};
+
+/* ============ 兩人對照 ============ */
+let cmp = {A:null, B:null}, disagreements = [];
+function normalizeProgress(d){
+  if (d.pages){
+    for (const k in d.pages){ const pg = d.pages[k];
+      (pg.lines || []).forEach(L => { if (L.line_type) L.line_type = normLineType(L.line_type); });
+      normEdits(pg.edits); }
+    return d;
+  }
+  if (d.edits) return {annotator: d.annotator, pages: {[baseName(d.image_name || "page")]:
+    {lines: d.lines ? d.lines.map(L => ({id:L.id, text:L.text, line_type:"Main"})) : [], edits: normEdits(d.edits)}}};
+  return null;
+}
+function finalText(line, ed){
+  const e = ed[line.id];
+  if (!e) return null;
+  if (e.verdict === "修改" || e.verdict === "轉寫") return e.corrected;
+  if (e.verdict === "正確") return (e.original !== undefined ? e.original : line.text);
+  return "〔" + e.verdict + "〕";
+}
+function lev(a, b){
+  a = [...a]; b = [...b];
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = new Array(n+1); for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++){
+    const curr = new Array(n+1); curr[0] = i;
+    for (let j = 1; j <= n; j++)
+      curr[j] = Math.min(prev[j]+1, curr[j-1]+1, prev[j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    prev = curr;
+  }
+  return prev[n];
+}
+function loadCmp(slot){ return e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t => { cmp[slot] = normalizeProgress(JSON.parse(t)); refreshCmp(); })
+   .catch(() => alert(I18N[LANG] && I18N[LANG].json_fail || I18N["zh-Hant"].json_fail));
+};}
+$("cmpA").onchange = loadCmp("A"); $("cmpB").onchange = loadCmp("B");
+$("foldOn").onchange = () => refreshCmp();
+$("cmpFolder").onchange = () => refreshCmp();
+/* 盲轉寫紀錄的最終文字：本身是盲轉寫，或覆核後保留在 blind 欄位 */
+function blindText(e){
+  if (!e) return null;
+  const b = e.mode === "blind" ? e : e.blind;
+  return b ? finalText({id:"_"}, {_: b}) : null;
+}
+/* 對照的列：兩份進度共同判定的列；或（與資料夾對照時）A 的盲轉寫列對資料夾 XML 裡的既有轉寫 */
+function cmpPairs(){
+  const out = [];
+  if ($("cmpFolder").checked){
+    const byName = {}; state.pages.forEach(p => byName[p.name] = p);
+    for (const pg in cmp.A.pages){
+      const p = byName[pg]; if (!p || !p.parsed) continue;
+      const eA = cmp.A.pages[pg].edits || {};
+      for (const L of p.parsed.lines){
+        const a = blindText(eA[L.id]); if (a === null) continue;
+        out.push({page:pg, id:L.id, type:L.lineType || "Main", a:a, b:L.text, orig:L.text});
+      }
+    }
+    return out;
+  }
+  for (const pg in cmp.A.pages){
+    if (!cmp.B.pages[pg]) continue;
+    const lines = cmp.A.pages[pg].lines || [];
+    const eA = cmp.A.pages[pg].edits || {}, eB = cmp.B.pages[pg].edits || {};
+    for (const L of lines){
+      const ta0 = finalText(L, eA), tb0 = finalText(L, eB);
+      if (ta0 === null || tb0 === null) continue;
+      out.push({page:pg, id:L.id, type:(eA[L.id] && eA[L.id].line_type) || L.line_type || "Main", a:ta0, b:tb0, orig:L.text || ""});
+    }
+  }
+  return out;
+}
+async function refreshCmp(){
+  if ($("cmpFolder").checked && cmp.A && !blindLocked())
+    for (const p of state.pages) if (cmp.A.pages[p.name]){ try{ await ensureParsed(p); }catch(err){} }
+  renderCmp();
+}
+function renderCmp(){
+  const out = $("cmpOut");
+  const folder = $("cmpFolder").checked;
+  $("cmpBLabel").classList.toggle("hidden", folder);
+  disagreements = [];
+  // 盲轉寫未完成時，對照結果（含既有轉寫與他人錄文）一律不顯示
+  if (blindLocked()){ out.className = "empty"; out.textContent = fmt(t("blind_locked"), {n:blindRemaining()}); return; }
+  if (folder ? !cmp.A : !(cmp.A && cmp.B)){ out.className = "empty";
+    out.textContent = folder ? t("cmp_no_blind") :
+      ((cmp.A || cmp.B) ? fmt(t("cmp_loaded"), {which:(cmp.A ? "A" : "") + (cmp.B ? "B" : "")}) : t("cmp_empty")); return; }
+  const pairs = cmpPairs();
+  if (folder && !pairs.length){ out.className = "empty"; out.textContent = t("cmp_no_blind"); return; }
+  out.className = "";
+  const fold = $("foldOn").checked;
+  const K = s => fold ? foldVariants(s) : String(s == null ? "" : s).normalize("NFC");
+  let lineBoth = 0, lineAgree = 0, chars = 0, dist = 0;
+  let rawAgree = 0, rawDist = 0, variantOnly = 0;
+  const byType = {};
+  for (const P of pairs){
+    const ta0 = P.a, tb0 = P.b;
+    lineBoth++;
+    const ta = K(ta0), tb = K(tb0);
+    const lt = P.type;
+    byType[lt] = byType[lt] || {lines:0, agree:0, chars:0, dist:0};
+    byType[lt].lines++;
+    const d = lev(ta, tb), c = Math.max([...ta].length, [...tb].length);
+    chars += c; dist += d;
+    byType[lt].chars += c; byType[lt].dist += d;
+    const rd = lev(ta0, tb0);
+    rawDist += rd; rawAgree += (ta0 === tb0 ? 1 : 0);
+    if (ta0 !== tb0 && ta === tb) variantOnly++;
+    if (ta === tb){ lineAgree++; byType[lt].agree++; }
+    else disagreements.push({page:P.page, id:P.id, type:lt, a:ta0, b:tb0, orig:P.orig});
+  }
+  const linePct = lineBoth ? (lineAgree/lineBoth*100).toFixed(1) : "0";
+  const charPct = chars ? ((1 - dist/chars)*100).toFixed(2) : "0";
+  const rawPct  = chars ? ((1 - rawDist/chars)*100).toFixed(2) : "0";
+  let h = '<div class="agree">' + fmt(t("cmp_agree"), {n:lineBoth, c:charPct, l:linePct}) + '</div>';
+  if (fold)
+    h += '<div class="banner ok">' + fmt(t("cmp_fold_ok"), {r:rawPct, v:variantOnly}) + '</div>';
+  else
+    h += '<div class="banner warn">' + t("cmp_fold_warn") + '</div>';
+  h += '<table class="grid"><tr><th>' + t("cmp_th_type") + '</th><th>' + t("cmp_th_lines") + '</th><th>' + t("cmp_th_lineagree") + '</th><th>' + t("cmp_th_charagree") + '</th></tr>';
+  for (const k in byType){
+    const t = byType[k];
+    h += "<tr><td>" + (LABEL_LINE[k] || k) + "</td><td>" + t.lines + "</td><td>" +
+      (t.lines ? (t.agree/t.lines*100).toFixed(1) : "0") + "%</td><td>" +
+      (t.chars ? ((1 - t.dist/t.chars)*100).toFixed(2) : "0") + "%</td></tr>";
+  }
+  h += "</table>";
+  if (disagreements.length){
+    h += '<table class="grid" style="margin-top:18px"><tr><th>' + t("th_page") + '</th><th>' + t("th_line") + '</th><th>' + t("cmp_th_type") + '</th><th>' +
+         (cmp.A.annotator || "A") + '</th><th>' + (folder ? t("cmp_folder_col") : (cmp.B.annotator || "B")) + '</th></tr>';
+    disagreements.slice(0, 300).forEach(d => {
+      h += "<tr><td class='serif'>" + d.page + "</td><td>" + d.id + "</td><td>" + (LABEL_LINE[d.type] || d.type) +
+        "</td><td class='serif'>" + d.a + "</td><td class='serif'>" + d.b + "</td></tr>";
+    });
+    h += "</table>";
+  } else h += "<div>" + t("cmp_none") + "</div>";
+  out.innerHTML = h;
+}
+$("expDis").onclick = () => {
+  if (!disagreements.length){ alert(t("cmp_nodis")); return; }
+  const rows = [["page","line_id","line_type","A","B","候選文"]].concat(
+    disagreements.map(d => [d.page, d.id, d.type, d.a, d.b, d.orig]));
+  dl("校書臺_分歧列.csv", toCsv(rows), "text/csv;charset=utf-8");
+};
+
+window.addEventListener("beforeunload", e => {
+  if (saveTimer){ clearTimeout(saveTimer); saveTimer = null; saveLocal(); }
+  if (reloadingForUpdate || desktop || FSA) return; // 判定即時存檔、頁面清單也記住了，不必再問「要離開網站嗎？」
+  const n = Object.keys(state.progress).length;
+  if (n){ e.preventDefault(); e.returnValue = ""; }
+});
+document.querySelectorAll(".langOpt").forEach(b => b.onclick = () => {
+  applyLang(b.dataset.lang);
+  try{ localStorage.setItem(LANG_KEY, b.dataset.lang); }catch(e){}
+  closeLangModal();
+});
+$("langBtn").onclick = () => openLangModal(false);
+$("langModal").addEventListener("click", e => { if (e.target === $("langModal") && !langRequired) closeLangModal(); });
+// 語言選單開著時，鍵盤不傳到後面的頁面（例如 Enter 不會誤記「一致」）；Esc 只在可關閉時生效
+window.addEventListener("keydown", e => {
+  if (!langModalOpen()) return;
+  if (e.key === "Escape"){ e.preventDefault(); if (!langRequired) closeLangModal(); }
+  e.stopPropagation();
+}, true);
+
+/* ============ 配色（與進度暫存分開存放） ============ */
+const PAL_KEY = "jiaoshutai_palette";
+const PALETTES = ["ochre", "oxblood", "slate"];
+const PAL_TITLEBAR = {ochre:"#5C4510", oxblood:"#662B1F", slate:"#36535A"}; // 頁首漸層最深色，用作視窗標題列
+function applyPalette(k){
+  if (PALETTES.indexOf(k) < 0) k = "ochre";
+  document.documentElement.dataset.palette = k;
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", PAL_TITLEBAR[k]);
+  document.querySelectorAll(".palDot").forEach(b => b.classList.toggle("cur", b.dataset.pal === k));
+}
+document.querySelectorAll(".palDot").forEach(b => b.onclick = () => {
+  applyPalette(b.dataset.pal);
+  try{ localStorage.setItem(PAL_KEY, b.dataset.pal); }catch(e){}
+});
+let _savedPal = null; try{ _savedPal = localStorage.getItem(PAL_KEY); }catch(e){}
+applyPalette(_savedPal || "ochre");
+if (!langModalOpen()) $("scroller").focus({preventScroll:true});
+
+/* ============ 離線快取（安裝為應用程式後無網路也能開啟） ============ */
+let reloadingForUpdate = false;
+if ("serviceWorker" in navigator && location.protocol !== "file:"){
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+  // 新版本接管時：若本次尚未載入資料夾，立即重新載入改用新版；已在工作中則等下次開啟再生效
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || state.pages.length) return;
+    reloadingForUpdate = true; location.reload();
+  });
+}
+
+let _savedLang = null; try{ _savedLang = localStorage.getItem(LANG_KEY); }catch(e){}
+applyLang(_savedLang || "zh-Hant");
+// 首次啟動：打開「使用說明」，並在其上顯示語言選單；選定後說明即以該語言顯示
+if (!_savedLang){ goTab("H"); openLangModal(true); }
+restorePages();
+restorePagesFSA();
+</script>
+</body>
+</html>
