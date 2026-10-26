@@ -22,15 +22,23 @@
 
 自 2026 年 10 月起，大部分程式碼由 Claude Code（Anthropic）在作者指導下撰寫，分為三類：
 
-1. 把本機 HTML 檔改成可安裝、可離線使用的網頁應用程式，並發佈到 GitHub Pages；
-2. 實現介面設計的更新：
-    1. 三種配色主題與使用說明頁的裝飾圖；
-    2. 依最新的轉寫規則更新介面；
-    3. 加入盲轉寫模式；
-3. 修正錯誤：
-    1. 進度保存：重新開啟後自動恢復頁面清單與資料夾，導出時不再遺漏先前工作階段的頁面；
-    2. 載入：可一次載入多個資料夾，圖片與 XML 不論先後都能配對；
-    3. 更新：已安裝的版本能自動收到新版本。
+<ol>
+<li>把本機 HTML 檔改成可安裝、可離線使用的網頁應用程式，並發佈到 GitHub Pages；</li>
+<li>實現介面設計的更新：
+<ol type="1">
+<li>三種配色主題與使用說明頁的裝飾圖；</li>
+<li>依最新的轉寫規則更新介面；</li>
+<li>加入盲轉寫模式；</li>
+</ol>
+</li>
+<li>修正錯誤：
+<ol type="1">
+<li>進度保存：重新開啟後自動恢復頁面清單與資料夾，導出時不再遺漏先前工作階段的頁面；</li>
+<li>載入：可一次載入多個資料夾，圖片與 XML 不論先後都能配對；</li>
+<li>更新：已安裝的版本能自動收到新版本。</li>
+</ol>
+</li>
+</ol>
 
 每項修改都經作者測試，作者對本工具負責。
 
@@ -65,15 +73,23 @@ The first version of 校書臺 was completed in July 2026. In October 2026, it w
 
 Since October 2026, Claude Code (Anthropic) has written most of the code under the author's direction. Its work falls into three areas:
 
-1. turning the local HTML file into an installable web app that works offline, and publishing it on GitHub Pages;
-2. implementing interface updates:
-    1. the three color themes and the Help-page decoration;
-    2. interface changes that follow the latest transcription rules;
-    3. a blind-transcription mode;
-3. fixing bugs:
-    1. saving progress: the page list and folders reopen after a restart, and exports no longer leave out pages from earlier sessions;
-    2. loading: several folders can be loaded at once, with images and XML paired in any order;
-    3. updates: installed copies now receive new versions automatically.
+<ol>
+<li>turning the local HTML file into an installable web app that works offline, and publishing it on GitHub Pages;</li>
+<li>implementing interface updates:
+<ol type="1">
+<li>the three color themes and the Help-page decoration;</li>
+<li>interface changes that follow the latest transcription rules;</li>
+<li>a blind-transcription mode;</li>
+</ol>
+</li>
+<li>fixing bugs:
+<ol type="1">
+<li>saving progress: the page list and folders reopen after a restart, and exports no longer leave out pages from earlier sessions;</li>
+<li>loading: several folders can be loaded at once, with images and XML paired in any order;</li>
+<li>updates: installed copies now receive new versions automatically.</li>
+</ol>
+</li>
+</ol>
 
 The author tested every change and is responsible for the tool.
 
