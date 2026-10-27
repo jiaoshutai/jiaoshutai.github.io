@@ -44,7 +44,7 @@
 
 ## 圖像來源
 
-- **Icon**：作者設計。
+- **Icon**：作者設計，照片由 Jingyuan Liu 提供。
 - **使用說明頁裝飾圖**：取自西漢日月四神紋錯金青銅當盧，出土於江西南昌海昏侯劉賀墓，現藏江西省博物館。剪影由 Claude Design 依[百度百科](https://baike.baidu.com/item/%E8%A5%BF%E6%B1%89%E6%97%A5%E6%9C%88%E5%9B%9B%E7%A5%9E%E7%BA%B9%E9%94%99%E9%87%91%E9%9D%92%E9%93%9C%E5%BD%93%E5%8D%A2/64146354)的照片製作。
 
 ---
@@ -95,5 +95,5 @@ The author tested every change and is responsible for the tool.
 
 ## Image credits
 
-- **Icon:** designed by the author.
+- **Icon:** designed by the author, with photographs provided by Jingyuan Liu.
 - **Help-page decoration:** based on a Western Han gold-inlaid bronze horse frontlet (*danglu*) with sun, moon and Four Spirits motifs, excavated from the tomb of Liu He, Marquis of Haihun, in Nanchang, Jiangxi, and now in the Jiangxi Provincial Museum. Claude Design made the silhouette from a photograph on [Baidu Baike](https://baike.baidu.com/item/%E8%A5%BF%E6%B1%89%E6%97%A5%E6%9C%88%E5%9B%9B%E7%A5%9E%E7%BA%B9%E9%94%99%E9%87%91%E9%9D%92%E9%93%9C%E5%BD%93%E5%8D%A2/64146354).
