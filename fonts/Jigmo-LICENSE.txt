@@ -1,0 +1,7 @@
+jst-serif-jigmo*.woff2 are subsets of Jigmo, Jigmo2 and Jigmo3 (version 2025-09-12)
+by Koichi Kamichi, https://kamichikoichi.github.io/jigmo/
+
+Jigmo is dedicated to the public domain under CC0 1.0 Universal:
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Subsets are rebuilt with tools/subset_rare.py.

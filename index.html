@@ -35,7 +35,7 @@
   /* fixed in every palette: referenced by the help text */
   --red:#B3261E; --green:#2F6B46; --amber:#8A5A0A; --reading:#FFFFFF;
   --sans:'Inter','Noto Sans TC','Noto Sans SC',sans-serif;
-  --serif:'Noto Serif TC','Songti TC','STSong',serif;
+  --serif:'Noto Serif TC','Jiaoshutai Serif','Songti TC','STSong',serif; /* Jiaoshutai Serif：GT 中 Noto Serif TC 沒有的字（舊形取自 Noto Serif CJK TC，擴展 B 以後取自 Jigmo） */
   --body:'LXGW WenKai TC','FangSong','STFangsong',serif;
 }
 :root[lang="en"]{ --body:'Newsreader','LXGW WenKai TC',Georgia,serif; }
@@ -194,6 +194,23 @@ textarea.noteArea{display:block; width:100%; font-size:16px; padding:10px 12px; 
 .insBtns{margin-left:auto; display:flex; gap:8px}
 .insBtns .btn{font-family:var(--serif)}
 .kbdIns{margin-left:4px}
+/* 舊形按鈕與字形標注（第 12 輪） */
+.formRow{display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:10px}
+.formLabel{font-size:13px; color:var(--tx2); margin-right:2px}
+.oldForms{display:flex; flex-wrap:wrap; gap:4px}
+.oldForms .btn{font-family:var(--serif); font-size:19px; line-height:1.2; padding:3px 5px; box-shadow:none}
+.markRow{display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:10px}
+.readingAsk{display:inline-flex; align-items:center; gap:6px}
+.readingAsk input{font-family:var(--serif); font-size:18px; width:7em; padding:4px 8px; border:1px solid var(--line); border-radius:4px}
+.markList{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.markList:empty{display:none}
+.markEntry{display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:-6px 0 14px}
+.markEntry .markList{margin-top:0}
+.markEntry .markChip{padding-right:10px}
+.markChip{display:inline-block; font-size:14px; line-height:1.9; padding:0 2px 0 10px; border-radius:4px;
+  border:1px solid var(--fixC); color:var(--tx)}
+.markChip .glyph{font-family:var(--serif); font-size:17px}
+.markChip button{border:none; background:none; cursor:pointer; color:var(--tx2); font-size:15px; padding:0 6px; margin-left:2px}
 /* 盲轉寫頁沒有「一致」；鎖定的頁也沒有錄文框 */
 #panelV[data-mode="blind"] .kOk, #panelV[data-mode="locked"] .kOk, #panelV[data-mode="locked"] .kIns{display:none}
 kbd.insKey{margin-left:10px}
@@ -233,7 +250,7 @@ table.grid tr.doneRow td{background:#F2F7F3}
 .help ul{list-style:none}
 .help li{position:relative; padding-left:24px; text-wrap:pretty}
 .help li::before{content:"·"; position:absolute; left:8px; color:var(--dk)}
-.help .glyph{font-family:var(--serif); font-size:1.1em}
+.help .glyph, .help g{font-family:var(--serif); font-size:1.1em}
 .bronze{position:absolute; z-index:0; top:-24px; bottom:-8px; left:730px; right:-200px; pointer-events:none;
   -webkit-mask:linear-gradient(90deg, transparent 0%, #000 24%, #000 54%, transparent 76%), linear-gradient(180deg, transparent 0%, #000 12%, #000 86%, transparent 100%);
   -webkit-mask-composite:source-in;
@@ -336,6 +353,7 @@ table.grid tr.doneRow td{background:#F2F7F3}
           <button class="btn primary" id="transSave" data-i18n="trans_save">確認錄文</button>
           <span class="insBtns"><button class="btn small" data-ins="□" data-i18n="ins_box">插入 □</button><button class="btn small" data-ins="〓" data-i18n="ins_geta">插入 〓</button></span>
         </div>
+        <div class="editTools"></div>
       </div>
       <div class="verdicts">
         <button class="btn big ok" id="vOk" data-i18n="v_ok">✓ 一致（正確）</button>
@@ -343,6 +361,7 @@ table.grid tr.doneRow td{background:#F2F7F3}
         <button class="btn big" id="vBlur" data-i18n="v_blur">▨ 整列不可辨</button>
         <button class="btn big" id="vFlag" data-i18n="v_flag">⚠ 異常反饋</button>
       </div>
+      <div class="markEntry" id="markEntry"><button class="btn small" id="vMark" data-i18n="v_mark">標注字形…</button><span class="markList" id="markView"></span></div>
       <div id="fixWrap" class="hidden">
         <div class="prompt" data-i18n="fix_prompt">請改成與影像一致的文字（照錄字形；看不清的字錄 □，打不出的字錄 〓）：</div>
         <textarea class="editArea" id="fixText"></textarea>
@@ -350,6 +369,7 @@ table.grid tr.doneRow td{background:#F2F7F3}
           <button class="btn primary" id="fixSave" data-i18n="fix_save">確認修改</button>
           <span class="insBtns"><button class="btn small" data-ins="□" data-i18n="ins_box">插入 □</button><button class="btn small" data-ins="〓" data-i18n="ins_geta">插入 〓</button></span>
         </div>
+        <div class="editTools"></div>
       </div>
       <div id="flagWrap" class="hidden">
         <div class="prompt" data-i18n="flag_prompt">說明異常情況（如：紅框嚴重偏移或略有偏移、夾註被拆錯、使用說明沒有提到的版面）：</div>
@@ -424,6 +444,12 @@ table.grid tr.doneRow td{background:#F2F7F3}
     <li data-i18n-html="help_btn2"></li>
     <li data-i18n-html="help_btn3"></li>
     <li data-i18n-html="help_btn4"></li></ul>
+    <h2 data-i18n="help_h_rule">錄字規則</h2>
+    <ul><li data-i18n-html="help_rule1"></li>
+    <li data-i18n-html="help_rule2"></li>
+    <li data-i18n-html="help_rule3"></li>
+    <li data-i18n-html="help_rule4"></li>
+    <li data-i18n-html="help_rule5"></li></ul>
     <h2 data-i18n="help_h_three">四種列</h2>
     <ul><li data-i18n-html="help_three1"></li>
     <li data-i18n-html="help_three2"></li>
@@ -475,7 +501,7 @@ const I18N = {
 "ask_line":"這一列的候選文字與影像一致嗎？","vtag_unset":"未校",
 "trans_prompt":"這一列尚無候選文字。請照圖錄文（圖上刻什麼錄什麼）：","trans_save":"確認錄文",
 "v_ok":"✓ 一致（正確）","v_fix":"✎ 不一致（修改）","v_blur":"▨ 整列不可辨","v_flag":"⚠ 異常反饋",
-"fix_prompt":"請改成與影像一致的文字（照錄字形；看不清的字錄 □，打不出的字錄 〓）：","fix_save":"確認修改",
+"fix_prompt":"請改成與影像一致的文字（照書上的字形錄；看不清的字錄 □，找不到的字錄 〓）：","fix_save":"確認修改",
 "flag_prompt":"說明異常情況（如：紅框嚴重偏移或略有偏移、夾註被拆錯、使用說明沒有提到的版面）：","flag_save":"提交反饋",
 "note_ph":"備註（可不填）",
 "prev_btn":"← 上一列","next_btn":"下一列 →",
@@ -498,8 +524,8 @@ const I18N = {
 "help_h_use":"工具用途",
 "help_use_p":"左側是書頁上的一列字，已裁切放大；右側是這一列的既有轉寫。工作分兩種。<b>覆核</b>：看圖判斷右側文字是否與圖一致，用下面四個按鈕作答。<b>獨立轉寫</b>：指定的頁面會以「盲轉寫模式」打開，右側不顯示既有轉寫，只有空白錄文框，請照圖錄文。",
 "help_h_btn":"四個按鈕",
-"help_btn1":"<b>一致</b>：文字與圖完全相同。按一下（或按 Enter）即記錄，按鈕隨即填色；確認後再按「下一列」。",
-"help_btn2":"<b>不一致</b>：把文字改成與圖相同。<b>一切以圖為準</b>：書上的字形若另有其字、輸入法找得到（如 爲、卽、吿、荆、峯），照書上錄；只是筆畫微異、找不到單獨的字（如缺筆），錄通行字；認得但打不出的字（多為生僻字），錄 〓；字跡看不清的，錄 □。",
+"help_btn1":"<b>一致</b>：文字與圖完全相同。按一下（或按 Enter）即記錄，按鈕隨即填色；確認後再按「下一列」。請留意書上可能與通行字形有細微差異的字，例如 <g>姸</g> 與 <g>妍</g>、<g>寛</g> 與 <g>寬</g>，以及字形相近、容易混淆的字，例如 <g>麋</g> 與 <g>麇</g>。",
+"help_btn2":"<b>不一致</b>：把文字改成與圖相同。怎樣錄字，見下一節「錄字規則」。",
 "help_btn3":"<b>整列不可辨</b>：整列字跡都無法辨認時才用。只有個別字看不清，請在文字裡用 □。",
 "help_btn4":"<b>異常反饋</b>：紅框嚴重偏移、一列被拆成兩列、兩列被框在一起，或任何使用說明沒有提到的情況，用一句話描述即可。不影響轉寫的小問題（例如紅框略有偏移），照常判「一致」或「不一致」，再在這裡寫明，兩者都會記下。",
 "help_h_three":"四種列",
@@ -509,8 +535,8 @@ const I18N = {
 "help_h_sym":"特殊符號",
 "help_three4":"<b>題名列</b>：題區內的一列，照圖錄文。",
 "help_sym1":"<b>□ 看不清的字</b>：書上這裡有字，但因漫漶、蟲蛀、缺損或掃描不清而無法辨認，一個字錄一個 □。字形清楚、只是認不出的字，也錄 □，並在備註寫「字形清楚，未能識別」。",
-"help_sym2":"<b>〓 打不出的字</b>：認得是哪個字，但用輸入法打不出（例如新收的生僻字），一個字錄一個 〓，並在備註寫下字形描述，知道碼位的也一併寫上，例如「左土右觜，U+3268F」。即使你能用其他方法輸入該字，也請錄 〓，以免兩人寫法不一。",
-"help_sym3":"錄文框旁的「插入 □」「插入 〓」兩個按鈕可直接插入符號，也可按 ⌥/Alt+1、⌥/Alt+2。",
+"help_sym2":"<b>〓 找不到的字</b>：認得字形，但照「錄字規則」的順序都找不到，而且與通行字有部件上的差別。一個字錄一個 〓，並在備註描述字形，知道碼位的也一併寫上，例如「左土右遺，U+2D3F8」。",
+"help_sym3":"錄文框下方：「插入 □」「插入 〓」插入符號，也可按 ⌥/Alt+1、⌥/Alt+2；「不易輸入的字」一排按鈕可直接插入該字；「字形存疑」「誤刻…」標注游標前的那個字，標注列在按鈕下方，按 × 可取消。覆核時按「標注字形…」，也會出現這些按鈕。",
 "help_h_two":"兩條提醒",
 "help_two1":"書上的朱筆圈點是句讀符號，錄文時略去。",
 "help_two2":"轉錄面板下方頁面原圖可以直接點擊某一列跳轉；綠色表示已經校過。",
@@ -518,7 +544,7 @@ const I18N = {
 "lang_modal_title":"語言 · 语言 · Language",
 "region_Main":"正文區","region_Interlinear":"夾註區","region_Figure":"圖區","region_Title":"題區","region_Page":"頁面",
 "line_Main":"正文列","line_Interlinear":"夾註列","line_figureLabel":"圖上標籤","line_figureTitle":"題名列",
-"hint_Main":"正文列：照圖錄文。有獨立字碼的異體字照原樣保留；缺筆、俗寫錄通行字。",
+"hint_Main":"正文列：照圖錄文。書上的字形另有其字的照錄，只是筆畫小異的錄通行字。",
 "hint_Interlinear":"夾註列：正文中間的雙行小字，每個框只應包含其中一列。若一個框裡框進了兩列小字，請用「異常反饋」。",
 "hint_figureLabel":"圖上標籤：圖版上零散的地名、星官名、方位、里程等短標。框內的字照順序錄，各標籤之間沒有先後。",
 "hint_figureTitle":"題名列：題區內的一列，照圖錄文。",
@@ -538,7 +564,7 @@ const I18N = {
 "line_word":"列 ","region_word":"　區域 ","no_region_warn":"　⚠ 這一列不屬於任何區域",
 "hint_notonto_pre":"類型字串不在本體之內：","hint_notonto_suf":"。請告知專案負責人。","empty_paren":"（空）",
 "hint_has_illegible":"　本列有 □：表示此處字跡不可辨。若你能辨認，請改為該字；不能辨認就照樣保留。",
-"hint_has_geta":"　本列有 〓：表示此字認得但打不出，已另行登記。請照樣保留，不要改成形近的字。",
+"hint_has_geta":"　本列有 〓：表示此字認得，但找不到可用的字，已另行登記。請照樣保留，不要改成形近的字。",
 "blind_chip":"盲轉寫","blind_toggle":"本頁盲轉寫",
 "blind_toggle_has_review":"這一頁已有覆核紀錄，不能改成盲轉寫。",
 "blind_toggle_off_confirm":"這一頁的盲轉寫還沒完成，關閉之後可能隨即顯示既有轉寫。確定關閉？","blind_banner":"盲轉寫模式：不顯示既有轉寫，請照圖錄文。",
@@ -547,6 +573,14 @@ const I18N = {
 "cmp_folder_label":"與資料夾的既有轉寫對照（只比 A 的盲轉寫列，即 IAA）","cmp_folder_col":"既有轉寫",
 "cmp_no_blind":"目前沒有可對照的盲轉寫列：請載入獨立轉寫者的進度 JSON（A），並在「頁面清單」選擇同一個工作資料夾。",
 "ins_box":"插入 □","ins_geta":"插入 〓",
+"v_mark":"標注字形…","mark_prompt":"在字上標注「字形存疑」或「誤刻」；若有錯字，也可以直接修改。文字沒有改動時，存為「一致」。","mark_save":"確認",
+"help_h_rule":"錄字規則","help_rule1":"<b>照書上的字形錄</b>：書上的字形若另有其字，就照書上錄，不要改成通行字；看起來像簡化字的也一樣。例如書上作 <g>爲</g> 錄 <g>爲</g>，不錄 <g>為</g>；作 <g>靑</g> 錄 <g>靑</g>；作 <g>矶</g> 錄 <g>矶</g>。","help_rule2":"<b>找字的順序</b>：先在錄文框下方「不易輸入的字」一排按鈕裡找，<g>卽</g>、<g>屛</g>、<g>塡</g>、<g>倂</g>、<g>吿</g> 等字都可以直接點按插入；找不到，再用輸入法找，也可以試手寫輸入（例如 Mac 的觸控式軌跡板手寫）。",
+"help_rule3":"<b>都找不到時</b>：書上的字與通行字只是筆畫小異（如缺筆、筆畫長短），錄通行字；有部件上的差別（如右邊作 <g>靑</g> 的 <g>精</g>），錄 〓，並在備註描述字形，例如「左米右<g>靑</g>」。","help_rule4":"<b>字形存疑</b>：遇到字形無法確定、依照上下文決定的情況（例如 <g>己</g>、<g>已</g>、<g>巳</g> 是否封口，<g>日</g>、<g>曰</g> 的寬窄），按照你的判斷錄入，再把游標放在該字後面（或選中該字），按「字形存疑」。","help_rule5":"<b>誤刻</b>：字形看得清楚，但你認為刻錯了，形近的另一個字才合文意（例如把 <g>裨</g> 刻成 <g>禆</g>），仍照書上錄，再把游標放在該字後面，按「誤刻…」，填上文意所指的字。通假、古今字、異體都不是誤刻，不要標。",
+"old_forms_label":"不易輸入的字","old_form_title":"插入 {c}（{u}）","mark_unclear_btn":"字形存疑",
+"mark_reading_btn":"誤刻…","mark_reading_ph":"文意所指的字","mark_ok":"確定",
+"mark_unclear_chip":"存疑：第 {n} 字","mark_reading_chip":"誤刻：第 {n} 字","mark_reading_as":"當作",
+"mark_q":"「{c}」","mark_remove":"取消標注","mark_need_char":"請先把游標放在要標注的字後面，或選中該字。",
+"mark_dropped":"{n} 個標注的字已改動，標注已移除。","norm_note":"已把相容字或變體選擇符改為標準碼位。",
 "done_count":"本頁已校 {n} 列","pg_pos":"第 {a} / {b} 頁",
 "page_done_confirm":"本頁 {n} 列已校完。要開下一張未完成的頁嗎？","last_line_alert":"已到本頁最後一列。還有 {n} 列沒有判定。",
 "all_done":"所有已解析的頁面都校完了。記得導出整本 JSON。",
@@ -599,7 +633,7 @@ const I18N = {
 "ask_line":"这一列的候选文字与影像一致吗？","vtag_unset":"未校",
 "trans_prompt":"这一列尚无候选文字。请照图录文（图上刻什么录什么）：","trans_save":"确认录文",
 "v_ok":"✓ 一致（正确）","v_fix":"✎ 不一致（修改）","v_blur":"▨ 整列不可辨","v_flag":"⚠ 异常反馈",
-"fix_prompt":"请改成与影像一致的文字（照录字形；看不清的字录 □，打不出的字录 〓）：","fix_save":"确认修改",
+"fix_prompt":"请改成与影像一致的文字（照书上的字形录；看不清的字录 □，找不到的字录 〓）：","fix_save":"确认修改",
 "flag_prompt":"说明异常情况（如：红框严重偏移或略有偏移、夹注被拆错、使用说明没有提到的版面）：","flag_save":"提交反馈",
 "note_ph":"备注（可不填）",
 "prev_btn":"← 上一列","next_btn":"下一列 →",
@@ -622,8 +656,8 @@ const I18N = {
 "help_h_use":"工具用途",
 "help_use_p":"左侧是书页上的一列字，已裁切放大；右侧是这一列的既有转写。工作分两种。<b>复核</b>：看图判断右侧文字是否与图一致，用下面四个按钮作答。<b>独立转写</b>：指定的页面会以“盲转写模式”打开，右侧不显示既有转写，只有空白录文框，请照图录文。",
 "help_h_btn":"四个按钮",
-"help_btn1":"<b>一致</b>：文字与图完全相同。按一下（或按 Enter）即记录，按钮随即填色；确认后再按“下一列”。",
-"help_btn2":"<b>不一致</b>：把文字改成与图相同。<b>一切以图为准</b>：书上的字形若另有其字、输入法找得到（如 爲、卽、吿、荆、峯），照书上录；只是笔画微异、找不到单独的字（如缺笔），录通行字；认得但打不出的字（多为生僻字），录 〓；字迹看不清的，录 □。",
+"help_btn1":"<b>一致</b>：文字与图完全相同。按一下（或按 Enter）即记录，按钮随即填色；确认后再按“下一列”。请留意书上可能与通行字形有细微差异的字，例如 <g>姸</g> 与 <g>妍</g>、<g>寛</g> 与 <g>寬</g>，以及字形相近、容易混淆的字，例如 <g>麋</g> 与 <g>麇</g>。",
+"help_btn2":"<b>不一致</b>：把文字改成与图相同。怎样录字，见下一节“录字规则”。",
 "help_btn3":"<b>整列不可辨</b>：整列字迹都无法辨认时才用。只有个别字看不清，请在文字里用 □。",
 "help_btn4":"<b>异常反馈</b>：红框严重偏移、一列被拆成两列、两列被框在一起，或任何使用说明没有提到的情况，用一句话描述即可。不影响转写的小问题（例如红框略有偏移），照常判“一致”或“不一致”，再在这里写明，两者都会记下。",
 "help_h_three":"四种列",
@@ -633,8 +667,8 @@ const I18N = {
 "help_h_sym":"特殊符号",
 "help_three4":"<b>题名列</b>：题区内的一列，照图录文。",
 "help_sym1":"<b>□ 看不清的字</b>：书上这里有字，但因漫漶、虫蛀、缺损或扫描不清而无法辨认，一个字录一个 □。字形清楚、只是认不出的字，也录 □，并在备注写“字形清楚，未能识别”。",
-"help_sym2":"<b>〓 打不出的字</b>：认得是哪个字，但用输入法打不出（例如新收的生僻字），一个字录一个 〓，并在备注写下字形描述，知道码位的也一并写上，例如“左土右觜，U+3268F”。即使你能用其他方法输入该字，也请录 〓，以免两人写法不一。",
-"help_sym3":"录文框旁的“插入 □”“插入 〓”两个按钮可直接插入符号，也可按 ⌥/Alt+1、⌥/Alt+2。",
+"help_sym2":"<b>〓 找不到的字</b>：认得字形，但照“录字规则”的顺序都找不到，而且与通行字有部件上的差别。一个字录一个 〓，并在备注描述字形，知道码位的也一并写上，例如“左土右遗，U+2D3F8”。",
+"help_sym3":"录文框下方：“插入 □”“插入 〓”插入符号，也可按 ⌥/Alt+1、⌥/Alt+2；“不易输入的字”一排按钮可直接插入该字；“字形存疑”“误刻…”标注光标前的那个字，标注列在按钮下方，按 × 可取消。复核时按“标注字形…”，也会出现这些按钮。",
 "help_h_two":"两条提醒",
 "help_two1":"书上的朱笔圈点是句读符号，录文时略去。",
 "help_two2":"转录面板下方页面原图可以直接点击某一列跳转；绿色表示已经校过。",
@@ -642,7 +676,7 @@ const I18N = {
 "lang_modal_title":"语言 · 語言 · Language",
 "region_Main":"正文区","region_Interlinear":"夹注区","region_Figure":"图区","region_Title":"题区","region_Page":"页面",
 "line_Main":"正文列","line_Interlinear":"夹注列","line_figureLabel":"图上标签","line_figureTitle":"题名列",
-"hint_Main":"正文列：照图录文。有独立字码的异体字照原样保留；缺笔、俗写录通行字。",
+"hint_Main":"正文列：照图录文。书上的字形另有其字的照录，只是笔画小异的录通行字。",
 "hint_Interlinear":"夹注列：正文中间的双行小字，每个框只应包含其中一列。若一个框里框进了两列小字，请用“异常反馈”。",
 "hint_figureLabel":"图上标签：图版上零散的地名、星官名、方位、里程等短标。框内的字照顺序录，各标签之间没有先后。",
 "hint_figureTitle":"题名列：题区内的一列，照图录文。",
@@ -662,7 +696,7 @@ const I18N = {
 "line_word":"列 ","region_word":"　区域 ","no_region_warn":"　⚠ 这一列不属于任何区域",
 "hint_notonto_pre":"类型字符串不在本体之内：","hint_notonto_suf":"。请告知项目负责人。","empty_paren":"（空）",
 "hint_has_illegible":"　本列有 □：表示此处字迹不可辨。若你能辨认，请改为该字；不能辨认就照样保留。",
-"hint_has_geta":"　本列有 〓：表示此字认得但打不出，已另行登记。请照样保留，不要改成形近的字。",
+"hint_has_geta":"　本列有 〓：表示此字认得，但找不到可用的字，已另行登记。请照样保留，不要改成形近的字。",
 "blind_chip":"盲转写","blind_toggle":"本页盲转写",
 "blind_toggle_has_review":"这一页已有复核记录，不能改成盲转写。",
 "blind_toggle_off_confirm":"这一页的盲转写还没完成，关闭之后可能随即显示既有转写。确定关闭？","blind_banner":"盲转写模式：不显示既有转写，请照图录文。",
@@ -671,6 +705,14 @@ const I18N = {
 "cmp_folder_label":"与资料夹的既有转写对照（只比 A 的盲转写列，即 IAA）","cmp_folder_col":"既有转写",
 "cmp_no_blind":"目前没有可对照的盲转写列：请载入独立转写者的进度 JSON（A），并在“页面清单”选择同一个工作资料夹。",
 "ins_box":"插入 □","ins_geta":"插入 〓",
+"v_mark":"标注字形…","mark_prompt":"在字上标注“字形存疑”或“误刻”；若有错字，也可以直接修改。文字没有改动时，存为“一致”。","mark_save":"确认",
+"help_h_rule":"录字规则","help_rule1":"<b>照书上的字形录</b>：书上的字形若另有其字，就照书上录，不要改成通行字；看起来像简化字的也一样。例如书上作 <g>爲</g> 录 <g>爲</g>，不录 <g>為</g>；作 <g>靑</g> 录 <g>靑</g>；作 <g>矶</g> 录 <g>矶</g>。","help_rule2":"<b>找字的顺序</b>：先在录文框下方“不易输入的字”一排按钮里找，<g>卽</g>、<g>屛</g>、<g>塡</g>、<g>倂</g>、<g>吿</g> 等字都可以直接点按插入；找不到，再用输入法找，也可以试手写输入（例如 Mac 的触控板手写）。",
+"help_rule3":"<b>都找不到时</b>：书上的字与通行字只是笔画小异（如缺笔、笔画长短），录通行字；有部件上的差别（如右边作 <g>靑</g> 的 <g>精</g>），录 〓，并在备注描述字形，例如“左米右<g>靑</g>”。","help_rule4":"<b>字形存疑</b>：遇到字形无法确定、依照上下文决定的情况（例如 <g>己</g>、<g>已</g>、<g>巳</g> 是否封口，<g>日</g>、<g>曰</g> 的宽窄），按照你的判断录入，再把光标放在该字后面（或选中该字），按“字形存疑”。","help_rule5":"<b>误刻</b>：字形看得清楚，但你认为刻错了，形近的另一个字才合文意（例如把 <g>裨</g> 刻成 <g>禆</g>），仍照书上录，再把光标放在该字后面，按“误刻…”，填上文意所指的字。通假、古今字、异体都不是误刻，不要标。",
+"old_forms_label":"不易输入的字","old_form_title":"插入 {c}（{u}）","mark_unclear_btn":"字形存疑",
+"mark_reading_btn":"误刻…","mark_reading_ph":"文意所指的字","mark_ok":"确定",
+"mark_unclear_chip":"存疑：第 {n} 字","mark_reading_chip":"误刻：第 {n} 字","mark_reading_as":"当作",
+"mark_q":"“{c}”","mark_remove":"取消标注","mark_need_char":"请先把光标放在要标注的字后面，或选中该字。",
+"mark_dropped":"{n} 个标注的字已改动，标注已移除。","norm_note":"已把兼容字或变体选择符改为标准码位。",
 "done_count":"本页已校 {n} 列","pg_pos":"第 {a} / {b} 页",
 "page_done_confirm":"本页 {n} 列已校完。要开下一张未完成的页吗？","last_line_alert":"已到本页最后一列。还有 {n} 列没有判定。",
 "all_done":"所有已解析的页面都校完了。记得导出整本 JSON。",
@@ -723,7 +765,7 @@ const I18N = {
 "ask_line":"Does the candidate text match the image for this line?","vtag_unset":"Unchecked",
 "trans_prompt":"This line has no candidate text yet. Transcribe exactly what the image shows:","trans_save":"Save transcription",
 "v_ok":"✓ Match (correct)","v_fix":"✎ Mismatch (fix)","v_blur":"▨ Whole line illegible","v_flag":"⚠ Report issue",
-"fix_prompt":"Enter text matching the image (copy the glyph as written; □ for a character you cannot read, 〓 for one you cannot type):","fix_save":"Save fix",
+"fix_prompt":"Enter text matching the image (follow the form in the book; □ for a character you cannot read, 〓 for one you cannot find):","fix_save":"Save fix",
 "flag_prompt":"Describe the issue (e.g. red box badly or slightly off, interlinear note split wrongly, a layout this help page does not cover):","flag_save":"Submit report",
 "note_ph":"Note (optional)",
 "prev_btn":"← Previous line","next_btn":"Next line →",
@@ -746,8 +788,8 @@ const I18N = {
 "help_h_use":"What the tool does",
 "help_use_p":"On the left is one line from the page, cropped and enlarged. On the right is the existing transcription of that line. There are two kinds of work. <b>Review</b>: compare the text with the image and answer with the four buttons below. <b>Independent transcription</b>: the assigned pages open in Blind mode, with the existing transcription hidden and an empty box on the right; type exactly what the image shows.",
 "help_h_btn":"The four buttons",
-"help_btn1":"<b>Match</b>: the text is identical to the image. Click it (or press Enter) to record it, and the button fills in; then click 'Next line'.",
-"help_btn2":"<b>Mismatch</b>: change the text to match the image. <b>The image is always the standard</b>: if the form in the book is a character of its own that your input method offers (e.g. 爲, 卽, 吿, 荆, 峯), enter it as printed; if it differs only slightly in its strokes and has no character of its own (a missing stroke, for example), enter the standard character; for a character you recognise but cannot type (usually a rare one), enter 〓; for one you cannot read, enter □.",
+"help_btn1":"<b>Match</b>: the text is identical to the image. Click it (or press Enter) to record it, and the button fills in; then click 'Next line'. Watch for characters in the book that differ only slightly from the standard form, such as <g>姸</g> and <g>妍</g>, or <g>寛</g> and <g>寬</g>, and for look-alike characters that are easily confused, such as <g>麋</g> and <g>麇</g>.",
+"help_btn2":"<b>Mismatch</b>: change the text to match the image. How to enter characters is explained in the next section, 'Entering characters'.",
 "help_btn3":"<b>Whole line illegible</b>: use this only when no part of the line can be read. If only some characters are unclear, mark them with □ in the text.",
 "help_btn4":"<b>Report issue</b>: the red box is badly off, one line was split into two, two lines were boxed together, or anything this help page does not cover. One sentence is enough. For a small problem that leaves the transcription correct (say, the box is slightly off), give the line its usual Match or Mismatch and describe the problem here too; both are recorded.",
 "help_h_three":"The four line types",
@@ -757,8 +799,8 @@ const I18N = {
 "help_h_sym":"Special symbols",
 "help_three4":"<b>Title line</b>: a line in a title region; transcribe exactly as shown.",
 "help_sym1":"<b>□ for a character you cannot read</b>: there is a character here, but wear, worm damage, loss or a poor scan makes it illegible. Enter one □ per character. If the shape is clear but you cannot identify the character, also enter □ and write \"shape clear, not identified\" in the note.",
-"help_sym2":"<b>〓 for a character you cannot type</b>: you know which character it is, but your input method cannot produce it (a recently encoded rare character, for example). Enter one 〓 per character and describe its shape in the note, with the code point if you know it, e.g. \"土 left, 觜 right, U+3268F\". Enter 〓 even if you could insert the character another way, so that both transcribers record it the same way.",
-"help_sym3":"The \"Insert □\" and \"Insert 〓\" buttons beside the text box insert the symbols; ⌥/Alt+1 and ⌥/Alt+2 do the same.",
+"help_sym2":"<b>〓 for a character you cannot find</b>: you recognise the form, but following the order in 'Entering characters' you cannot find it, and a component differs from the standard character. Enter one 〓 per character and describe its shape in the note, with the code point if you know it, e.g. \"土 left, 遺 right, U+2D3F8\".",
+"help_sym3":"Below the text box: 'Insert □' and 'Insert 〓' insert the symbols (⌥/Alt+1 and ⌥/Alt+2 do the same); the row of 'Hard-to-type characters' buttons inserts those characters; 'Form uncertain' and 'Miscarved…' mark the character just before the cursor. Marks are listed below the buttons; click × to remove one. In review, 'Mark characters…' opens the same buttons.",
 "help_h_two":"Two reminders",
 "help_two1":"The vermilion circles and dots on the page are punctuation marks; leave them out of the transcription.",
 "help_two2":"Click any line on the page image below the transcription panel to jump to it; green means already checked.",
@@ -766,7 +808,7 @@ const I18N = {
 "lang_modal_title":"Language · 語言 · 语言",
 "region_Main":"Main text","region_Interlinear":"Interlinear","region_Figure":"Figure","region_Title":"Title","region_Page":"Page",
 "line_Main":"Main line","line_Interlinear":"Interlinear line","line_figureLabel":"Figure label","line_figureTitle":"Title line",
-"hint_Main":"Main line: transcribe as shown. Keep variant forms that have their own character code; enter the standard character for forms with missing strokes or informal variants.",
+"hint_Main":"Main line: transcribe as shown. Enter forms that are characters of their own as printed; enter the standard character for forms that differ only in their strokes.",
 "hint_Interlinear":"Interlinear line: double-column small text within the main text. Each box should hold only one of the two columns; if a box holds both, use 'Report issue'.",
 "hint_figureLabel":"Figure label: scattered short labels such as place names, star names, directions and distances. Enter the characters in the box in order; the labels have no order among themselves.",
 "hint_figureTitle":"Title line: a line in a title region; transcribe exactly as shown.",
@@ -786,7 +828,7 @@ const I18N = {
 "line_word":"Line ","region_word":"　region ","no_region_warn":"　⚠ this line belongs to no region",
 "hint_notonto_pre":"Type string is not in the ontology: ","hint_notonto_suf":". Please tell the project coordinator.","empty_paren":"(empty)",
 "hint_has_illegible":"　This line contains □: a character here is illegible. If you can read it, replace □ with the character; otherwise keep □.",
-"hint_has_geta":"　This line contains 〓: a known character that cannot be typed, recorded separately. Keep 〓 as is; do not replace it with a similar-looking character.",
+"hint_has_geta":"　This line contains 〓: a known character for which no usable character could be found, recorded separately. Keep 〓 as is; do not replace it with a similar-looking character.",
 "blind_chip":"Blind","blind_toggle":"Blind mode for this page",
 "blind_toggle_has_review":"This page already has review verdicts, so it cannot switch to Blind mode.",
 "blind_toggle_off_confirm":"Blind transcription of this page is not finished. Turning it off may show the existing transcription right away. Turn it off?","blind_banner":"Blind mode: the existing transcription is hidden; type what the image shows.",
@@ -795,6 +837,14 @@ const I18N = {
 "cmp_folder_label":"Compare with the folder's existing transcription (A's blind lines only: the IAA)","cmp_folder_col":"Existing transcription",
 "cmp_no_blind":"No blind lines to compare yet: load the independent transcriber's progress JSON as A, and choose the same working folder under Pages.",
 "ins_box":"Insert □","ins_geta":"Insert 〓",
+"v_mark":"Mark characters…","mark_prompt":"Mark characters as 'Form uncertain' or 'Miscarved'; you can also correct the text here. If the text is unchanged, the line is saved as Match.","mark_save":"Save",
+"help_h_rule":"Entering characters","help_rule1":"<b>Follow the form in the book</b>: if the form printed in the book is a character of its own, enter it as printed and do not change it to the standard form, even if it looks like a simplified character. For example, if the book has <g>爲</g>, enter <g>爲</g>, not <g>為</g>; for <g>靑</g> enter <g>靑</g>; for <g>矶</g> enter <g>矶</g>.","help_rule2":"<b>Where to look</b>: first look in the row of 'Hard-to-type characters' buttons below the text box, where characters such as <g>卽</g>, <g>屛</g>, <g>塡</g>, <g>倂</g> and <g>吿</g> can be inserted with one click. If it is not there, try your input method, including handwriting input (on a Mac, for example, trackpad handwriting).",
+"help_rule3":"<b>If you cannot find it</b>: if the form differs from the standard character only in its strokes (a missing stroke, a longer or shorter stroke), enter the standard character. If a component differs (for example <g>精</g> written with <g>靑</g> on the right), enter 〓 and describe the form in the note, e.g. \"米 left, <g>靑</g> right\".","help_rule4":"<b>Form uncertain</b>: when you cannot determine the form and the context decides it (for example whether <g>己</g>, <g>已</g> or <g>巳</g> is closed, or how wide <g>日</g> or <g>曰</g> is), enter it as you judge it, then put the cursor just after the character (or select it) and click 'Form uncertain'.","help_rule5":"<b>Miscarved</b>: the form is clear, but you think the carver made a mistake and a similar-looking character fits the sense (for example <g>裨</g> carved as <g>禆</g>). Still enter what the book shows, then put the cursor just after the character, click 'Miscarved…' and type the character the sense calls for. Loan characters, ancient and modern forms, and variant forms are not carving mistakes; do not mark them.",
+"old_forms_label":"Hard-to-type characters","old_form_title":"Insert {c} ({u})","mark_unclear_btn":"Form uncertain",
+"mark_reading_btn":"Miscarved…","mark_reading_ph":"Intended character","mark_ok":"OK",
+"mark_unclear_chip":"Uncertain: character {n}, ","mark_reading_chip":"Miscarved: character {n}, ","mark_reading_as":" read as ",
+"mark_q":"{c}","mark_remove":"Remove mark","mark_need_char":"Put the cursor just after the character, or select it, first.",
+"mark_dropped":"{n} mark(s) removed because the marked character was changed.","norm_note":"Compatibility characters or variation selectors were changed to standard code points.",
 "done_count":"{n} line(s) checked on this page","pg_pos":"Page {a} of {b}",
 "page_done_confirm":"All {n} lines on this page are done. Open the next unfinished page?","last_line_alert":"This is the last line on the page. {n} line(s) still undecided.",
 "all_done":"All parsed pages are done. Remember to export the full JSON.",
@@ -854,8 +904,10 @@ function applyLang(lang){
   document.title = t("doc_title");
   document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.getAttribute("data-i18n")));
   document.querySelectorAll("[data-i18n-html]").forEach(el => el.innerHTML = t(el.getAttribute("data-i18n-html")));
-  // 說明裡的字形示例（峯／峰）以宋體顯示
-  document.querySelectorAll(".help [data-i18n-html]").forEach(el => el.innerHTML = el.innerHTML.replace(/[峯峰爲卽吿荆]/g, '<span class="glyph">$&</span>'));
+  // 說明裡的字形示例寫成 <g>…</g>，以宋體（閱讀字型）顯示，見 CSS .help g
+  document.querySelectorAll(".oldForms [data-u]").forEach(b => b.title = fmt(t("old_form_title"), {c:b.textContent, u:b.dataset.u}));
+  document.querySelectorAll(".editTools").forEach(h => { const w = h.closest("#fixWrap, #transWrap"); if (w) renderMarks(w); });
+  if ($("fixWrap").dataset.kind) setFixLabels();
   document.querySelectorAll("[data-i18n-ph]").forEach(el => el.setAttribute("placeholder", t(el.getAttribute("data-i18n-ph"))));
   document.querySelectorAll("[data-i18n-alt]").forEach(el => el.setAttribute("alt", t(el.getAttribute("data-i18n-alt"))));
   document.querySelectorAll(".langOpt").forEach(b => b.classList.toggle("cur", b.dataset.lang === lang));
@@ -1732,6 +1784,10 @@ function show(){
   $("vOk").classList.toggle("hidden", isTrans);
   $("vFix").classList.toggle("hidden", isTrans);
   if (isTrans) $("transText").value = mode === "blind" ? txt : "";
+  setMarks($("transWrap"), (isTrans && mode === "blind" && e && e.marks) || []);
+  setMarks($("fixWrap"), []);
+  $("markEntry").classList.toggle("hidden", mode !== "review" || isTrans);
+  renderMarkView(mode === "review" && !isTrans && e ? (e.marks || []) : []);
   $("askLine").classList.toggle("hidden", locked);
   $("askLine").firstElementChild.classList.toggle("hidden", mode === "blind");
   document.querySelector(".verdicts").classList.toggle("hidden", locked);
@@ -1772,7 +1828,8 @@ function record(verdict, extra){
   }, extra || {});
   // 盲轉寫之後再覆核，原來的盲轉寫保留在 blind 欄位，IAA 仍以它計算
   if (mode === "review" && prevE && blindDone(prevE))
-    rec.blind = prevE.blind || {verdict:prevE.verdict, corrected:prevE.corrected, note:prevE.note, annotator:prevE.annotator, ts:prevE.ts};
+    rec.blind = prevE.blind || Object.assign({verdict:prevE.verdict, corrected:prevE.corrected, note:prevE.note, annotator:prevE.annotator, ts:prevE.ts},
+                                             prevE.marks ? {marks:prevE.marks} : {});
   curEdits()[L.id] = rec;
   delete curDrafts()[L.id];
   saveLocal();
@@ -1833,11 +1890,37 @@ function nextUndone(){
 }
 $("vOk").onclick = () => record("正確");
 $("vBlur").onclick = () => record("不可辨");
-$("vFix").onclick = () => { if (pageMode(curPage()) !== "review") return; $("fixWrap").classList.remove("hidden"); $("panelV").dataset.v = "fix";
-  $("fixText").value = $("colText").textContent || ""; $("fixText").focus(); };
-$("fixSave").onclick = () => { const v = $("fixText").value.trim();
-  if (!v){ alert(t("fix_empty")); return; }
-  record("修改", {corrected: v}); };
+/* 「不一致」與「標注字形…」打開同一個錄文框；前者用於改字，後者用於在一致的列上標注（也可順手改字） */
+function openFixBox(kind){
+  if (pageMode(curPage()) !== "review") return;
+  const w = $("fixWrap"), e = shownEdit();
+  w.dataset.kind = kind; w.classList.remove("hidden");
+  if (kind === "fix") $("panelV").dataset.v = "fix";
+  setFixLabels();
+  $("fixText").value = $("colText").textContent || "";
+  setMarks(w, (e && e.marks) || []); // 標注是對畫面上這段文字（既有轉寫或上次的修改）做的
+  $("fixText").focus();
+}
+function setFixLabels(){
+  const mark = $("fixWrap").dataset.kind === "mark";
+  $("fixWrap").querySelector(".prompt").textContent = t(mark ? "mark_prompt" : "fix_prompt");
+  $("fixSave").textContent = t(mark ? "mark_save" : "fix_save");
+}
+$("vFix").onclick = () => openFixBox("fix");
+$("vMark").onclick = () => openFixBox("mark");
+/* 存檔：文字與既有轉寫相同，記為「一致」（可帶標注）；不同，記為「修改」 */
+$("fixSave").onclick = () => { const x = takeText($("fixText"));
+  if (!x.v){ alert(t("fix_empty")); return; }
+  const L = cur();
+  if (x.v === normText((L && L.text) || "")) record("正確", withMarks({}, x.marks));
+  else record("修改", withMarks({corrected: x.v}, x.marks));
+  if (x.msgs.length) alert(x.msgs.join("\n")); };
+function renderMarkView(marks){
+  const q = c => fmt(t("mark_q"), {c:'<span class="glyph">' + escHtml(c) + '</span>'});
+  $("markView").innerHTML = marks.map(m =>
+    '<span class="markChip">' + escHtml(fmt(t(m.type === "reading" ? "mark_reading_chip" : "mark_unclear_chip"), {n:m.i + 1})) + q(m.ch) +
+    (m.type === "reading" ? escHtml(t("mark_reading_as")) + q(m.as) : "") + '</span>').join("");
+}
 /* 異常反饋可與任何判定並存（例如紅框略有偏移，但轉寫無誤：照常判「一致」，再寫異常說明）。
    尚未判定的列，提交反饋即記為「異常」；已判定的列保留原判定，只記下說明。 */
 $("vFlag").onclick = () => { if (pageMode(curPage()) === "locked") return;
@@ -1848,9 +1931,9 @@ $("flagSave").onclick = () => {
   e.issue = $("flagText").value.trim(); e.note = $("lineNote").value.trim();
   saveLocal(); show();
 };
-$("transSave").onclick = () => { const v = $("transText").value.trim();
-  if (!v){ alert(t("trans_empty")); return; }
-  record("轉寫", {corrected: v}); };
+$("transSave").onclick = () => { const x = takeText($("transText"));
+  if (!x.v){ alert(t("trans_empty")); return; }
+  record("轉寫", withMarks({corrected: x.v}, x.marks)); if (x.msgs.length) alert(x.msgs.join("\n")); };
 /* 佔位符：□ 字跡不可辨，〓 字可識而打不出（字符規範 §3）。插入到游標處：
    按鈕插入它所在的錄文框；快捷鍵插入目前有游標的文字框，沒有時插入畫面上的錄文框 */
 function editBox(){
@@ -1865,6 +1948,110 @@ function insertSym(sym, box){
   box.setRangeText(sym, box.selectionStart, box.selectionEnd, "end");
   box.dispatchEvent(new Event("input", {bubbles:true}));
 }
+/* ===== 舊形按鈕、字形標注、存檔前正規化（第 12 輪） ===== */
+/* 「不易輸入的字」按鈕：等價表 v2 的 24 個舊形；加 矶、𲚏（左土右觜，U+3268F，Unicode 17.0 擴展 J，輿圖常見）；
+   加 GT 中出現過的舊形 厯畱涖幷揷 與擴展 B 的 𡉥𣢟𥯮𥳑𭑃𪠘（第 12 輪，依 Yifang 指定）。共 37 字。
+   全書固定同一排、不隨頁變化（隨頁變化等於洩露 GT）；按全書 GT 出現次數排列 */
+const OLD_FORMS = "爲卽荆靑鎭𲚏厯淸屛畱涖幷寛𡉥塡𥳑吿倂矶顚囘姸㑹䭾峯揷𣢟𥯮𭑃𪠘巓愼喩楡硏眞兪";
+/* 只收統一漢字：相容漢字由 NFC 折回，變體選擇符（含 IVS 與相容漢字的標準化變體序列）一律去掉 */
+const VS_RE = /[︀-️]|\uDB40[\uDD00-\uDDEF]/g;
+function normText(s){ return String(s).normalize("NFC").replace(VS_RE, ""); }
+function cps(s){ return Array.from(s || ""); }
+function escHtml(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;"})[c]); }
+/* 字形標注存在該列紀錄的 marks 欄：{type:"unclear", i, ch}（字形存疑，相當於 TEI <unclear>）或
+   {type:"reading", i, ch, as}（誤刻，as＝文意所指的字）。i 是碼位序號，從 0 起；擴展 B 以後的字也只算一個 */
+function wrapOf(el){ return el.closest("#fixWrap, #transWrap"); }
+function marksOf(wrap){ return wrap._marks || (wrap._marks = []); }
+function setMarks(wrap, marks){
+  wrap._marks = (marks || []).map(m => Object.assign({}, m));
+  const ask = wrap.querySelector(".readingAsk"); if (ask) ask.classList.add("hidden");
+  renderMarks(wrap);
+}
+/* 文字改動後重新對位：原位已不是那個字，就在前後 4 字內找最近的同一字；drop 時找不到的移除 */
+function realign(marks, text, drop){
+  const c = cps(text), out = []; let lost = 0;
+  for (const m of marks){
+    let j = c[m.i] === m.ch ? m.i : -1;
+    for (let d = 1; j < 0 && d <= 4; d++){ if (c[m.i - d] === m.ch) j = m.i - d; else if (c[m.i + d] === m.ch) j = m.i + d; }
+    if (j >= 0) out.push(Object.assign({}, m, {i:j}));
+    else if (drop) lost++;
+    else out.push(m);
+  }
+  out.sort((a, b) => a.i - b.i || (a.type < b.type ? -1 : a.type > b.type ? 1 : 0));
+  return {marks:out, lost:lost};
+}
+/* 標注的對象：選中的那一個字；沒有選取時，是游標前的那個字 */
+function caretChar(box){
+  const s = box.selectionStart, e = box.selectionEnd, pre = cps(box.value.slice(0, s));
+  if (e > s){ const sel = cps(box.value.slice(s, e)); return (sel.length === 1 && sel[0].trim()) ? {i:pre.length, ch:sel[0]} : null; }
+  const ch = pre[pre.length - 1];
+  return (ch && ch.trim()) ? {i:pre.length - 1, ch:ch} : null;
+}
+function renderMarks(wrap){
+  const list = wrap.querySelector(".markList"); if (!list) return;
+  const q = c => fmt(t("mark_q"), {c:'<span class="glyph">' + escHtml(c) + '</span>'});
+  list.innerHTML = marksOf(wrap).map((m, k) =>
+    '<span class="markChip">' + escHtml(fmt(t(m.type === "reading" ? "mark_reading_chip" : "mark_unclear_chip"), {n:m.i + 1})) + q(m.ch) +
+    (m.type === "reading" ? escHtml(t("mark_reading_as")) + q(m.as) : "") +
+    '<button type="button" data-k="' + k + '" title="' + escHtml(t("mark_remove")) + '" aria-label="' + escHtml(t("mark_remove")) + '">×</button></span>').join("");
+}
+/* 存檔前：NFC、去掉變體選擇符，標注重新對位 */
+function takeText(box){
+  const raw = box.value.trim(), v = normText(raw), r = realign(marksOf(wrapOf(box)), v, true), msgs = [];
+  if (v !== raw) msgs.push(t("norm_note"));
+  if (r.lost) msgs.push(fmt(t("mark_dropped"), {n:r.lost}));
+  return {v:v, marks:r.marks, msgs:msgs};
+}
+function withMarks(o, marks){ if (marks && marks.length) o.marks = marks; return o; }
+function buildEditTools(wrap){
+  const box = wrap.querySelector(".editArea"), host = wrap.querySelector(".editTools");
+  host.innerHTML =
+    '<div class="formRow"><span class="formLabel" data-i18n="old_forms_label"></span><span class="oldForms">' +
+    cps(OLD_FORMS).map(c => '<button type="button" class="btn small" data-ins="' + c + '" data-u="U+' + c.codePointAt(0).toString(16).toUpperCase() + '">' + c + '</button>').join("") +
+    '</span></div>' +
+    '<div class="markRow"><button type="button" class="btn small" data-mark="unclear" data-i18n="mark_unclear_btn"></button>' +
+    '<button type="button" class="btn small" data-mark="reading" data-i18n="mark_reading_btn"></button>' +
+    '<span class="readingAsk hidden"><input type="text" class="readingIn" data-i18n-ph="mark_reading_ph">' +
+    '<button type="button" class="btn small readingOk" data-i18n="mark_ok"></button></span></div>' +
+    '<div class="markList"></div>';
+  const ask = host.querySelector(".readingAsk"), inp = host.querySelector(".readingIn");
+  let pending = null; // 誤刻：等待填入文意字的那個字
+  host.querySelectorAll("[data-mark]").forEach(b => {
+    b.onmousedown = e => e.preventDefault(); // 不讓按鈕搶走錄文框的游標
+    b.onclick = () => {
+      const at = caretChar(box); if (!at){ alert(t("mark_need_char")); return; }
+      const ms = marksOf(wrap);
+      if (b.dataset.mark === "unclear"){
+        const k = ms.findIndex(m => m.type === "unclear" && m.i === at.i);
+        if (k >= 0) ms.splice(k, 1); else ms.push({type:"unclear", i:at.i, ch:at.ch});
+        wrap._marks = realign(ms, box.value, false).marks; renderMarks(wrap); return;
+      }
+      pending = at; ask.classList.remove("hidden");
+      const old = ms.find(m => m.type === "reading" && m.i === at.i);
+      inp.value = old ? old.as : ""; inp.focus();
+    };
+  });
+  const commit = () => {
+    const v = normText(inp.value.trim()); ask.classList.add("hidden");
+    if (pending && v){
+      const ms = marksOf(wrap).filter(m => !(m.type === "reading" && m.i === pending.i));
+      ms.push({type:"reading", i:pending.i, ch:pending.ch, as:v});
+      wrap._marks = realign(ms, box.value, false).marks; renderMarks(wrap);
+    }
+    pending = null; inp.value = ""; box.focus();
+  };
+  host.querySelector(".readingOk").onclick = commit;
+  inp.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.isComposing){ e.preventDefault(); commit(); }
+    else if (e.key === "Escape"){ pending = null; inp.value = ""; ask.classList.add("hidden"); box.focus(); }
+  });
+  host.querySelector(".markList").addEventListener("click", e => {
+    const b = e.target.closest("button[data-k]"); if (!b) return;
+    marksOf(wrap).splice(+b.dataset.k, 1); renderMarks(wrap);
+  });
+  box.addEventListener("input", () => { if (marksOf(wrap).length){ wrap._marks = realign(marksOf(wrap), box.value, false).marks; renderMarks(wrap); } });
+}
+buildEditTools($("transWrap")); buildEditTools($("fixWrap"));
 document.querySelectorAll("[data-ins]").forEach(b => {
   b.onmousedown = e => e.preventDefault(); // 不讓按鈕搶走錄文框的游標
   b.onclick = () => insertSym(b.dataset.ins, b.closest("#fixWrap, #transWrap").querySelector(".editArea"));
@@ -1921,8 +2108,12 @@ function lineMode(pgName, e){
   if (e && e.verdict) return e.mode || "review";
   return (blindLocked() && state.blind.has(pgName)) ? "blind" : "review";
 }
+/* 字形標注導出為「字位:字」，誤刻另附「>文意字」；字位從 1 起，按碼位計 */
+function markCol(e, type){
+  return (e.marks || []).filter(m => m.type === type).map(m => (m.i + 1) + ":" + m.ch + (type === "reading" ? ">" + m.as : "")).join("|");
+}
 async function exportCsvBook(){
-  const rows = [["page","line_id","region_type","region_raw","line_type","line_raw","候選文","判定","修正後","備註","校對者","時間","mode","issue"]];
+  const rows = [["page","line_id","region_type","region_raw","line_type","line_raw","候選文","判定","修正後","備註","校對者","時間","mode","issue","unclear","reading"]];
   const hide = blindLocked();
   for (const pg of await bookPages()){
     const ed = (state.progress[pg.name] || {}).edits || {};
@@ -1931,7 +2122,7 @@ async function exportCsvBook(){
       const e = ed[L.id] || dr[L.id] || {}; // 未判定的列帶出草稿裡的備註與異常說明
       rows.push([pg.name, L.id, L.regionType, L.regionRaw, L.lineType, L.lineRaw,
                  hide ? "" : L.text, e.verdict || "未校", e.corrected || "", e.note || "", e.annotator || "", e.ts || "",
-                 lineMode(pg.name, ed[L.id]), e.issue || ""]);
+                 lineMode(pg.name, ed[L.id]), e.issue || "", markCol(e, "unclear"), markCol(e, "reading")]);
     }
   }
   dl("校書臺_整本校對.csv", toCsv(rows), "text/csv;charset=utf-8");
