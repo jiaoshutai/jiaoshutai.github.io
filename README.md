@@ -20,7 +20,7 @@
 
 校書臺的第一版完成於 2026 年 7 月。同年 10 月藉助 Claude Design（Anthropic）重新設計：作者提供原有工具、配色色值，以及使用說明頁裝飾圖所用的照片；定稿後，由 Claude Design 產出供開發使用的設計原型與交接規格。
 
-自 2026 年 10 月起，大部分程式碼由 Claude Code（Anthropic）在作者指導下撰寫，分為三類：
+自 2026 年 10 月起，大部分程式碼由 Claude Code（Anthropic）在作者指導下撰寫，分為四類：
 
 <ol>
 <li>把本機 HTML 檔改成可安裝、可離線使用的網頁應用程式，並發佈到 GitHub Pages；</li>
@@ -35,9 +35,10 @@
 <ol type="1">
 <li>進度保存：重新開啟後自動恢復頁面清單與資料夾，導出時不再遺漏先前工作階段的頁面；</li>
 <li>載入：可一次載入多個資料夾，圖片與 XML 不論先後都能配對；</li>
-<li>更新：已安裝的版本能自動收到新版本。</li>
+<li>更新：已安裝的版本能自動收到新版本；</li>
 </ol>
 </li>
+<li>在錄文框下方加入「不易輸入的字」按鈕：一般輸入法不易打出的舊字形與生僻字（字表由作者擬定）可直接點按插入，並內置相應字型，使這些字在各台電腦上都能顯示。</li>
 </ol>
 
 每項修改都經作者測試，作者對本工具負責。
@@ -71,7 +72,7 @@ When a new version is published, installed copies update themselves the next tim
 
 The first version of 校書臺 was completed in July 2026. In October 2026, it was redesigned with Claude Design (Anthropic). The author supplied the existing tool, the color values and the photograph used for the Help-page decoration. Once the design was final, Claude Design produced a prototype and a handoff specification for development.
 
-Since October 2026, Claude Code (Anthropic) has written most of the code under the author's direction. Its work falls into three areas:
+Since October 2026, Claude Code (Anthropic) has written most of the code under the author's direction. Its work falls into four areas:
 
 <ol>
 <li>turning the local HTML file into an installable web app that works offline, and publishing it on GitHub Pages;</li>
@@ -86,9 +87,10 @@ Since October 2026, Claude Code (Anthropic) has written most of the code under t
 <ol type="1">
 <li>saving progress: the page list and folders reopen after a restart, and exports no longer leave out pages from earlier sessions;</li>
 <li>loading: several folders can be loaded at once, with images and XML paired in any order;</li>
-<li>updates: installed copies now receive new versions automatically.</li>
+<li>updates: installed copies now receive new versions automatically;</li>
 </ol>
 </li>
+<li>adding a row of "Hard-to-type characters" buttons below the text box: old forms and rare characters that common input methods do not easily produce (the list was drawn up by the author) can be inserted with one click, and bundled fonts make them display on any computer.</li>
 </ol>
 
 The author tested every change and is responsible for the tool.
