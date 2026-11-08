@@ -36,9 +36,10 @@
   --red:#B3261E; --green:#2F6B46; --amber:#8A5A0A; --reading:#FFFFFF;
   --sans:'Inter','Noto Sans TC','Noto Sans SC',sans-serif;
   --serif:'Noto Serif TC','Jiaoshutai Serif','Songti TC','STSong',serif; /* Jiaoshutai Serif：GT 中 Noto Serif TC 沒有的字（舊形取自 Noto Serif CJK TC，擴展 B 以後取自 Jigmo） */
-  --body:'LXGW WenKai TC','FangSong','STFangsong',serif;
+  --body:'JST Body','LXGW WenKai TC','FangSong','STFangsong',serif; /* JST Body：霞鶩文楷 GB 的漢字（今日字形）；標點仍取 WenKai TC（臺灣居中） */
 }
-:root[lang="en"]{ --body:'Newsreader','LXGW WenKai TC',Georgia,serif; }
+:root[lang="zh-Hans"]{ --body:'JST Punct Hans','JST Body','LXGW WenKai TC','FangSong','STFangsong',serif; }
+:root[lang="en"]{ --body:'Newsreader','JST Body','LXGW WenKai TC',Georgia,serif; }
 
 *{box-sizing:border-box; margin:0; padding:0}
 /* ===== app shell: the window never scrolls; only .scroller does =====
@@ -113,6 +114,7 @@ main{padding:24px 28px 28px; max-width:1280px; margin:0 auto; font-family:var(--
 .filebar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px}
 .filebar .note{flex:1 1 360px; color:var(--tx2); font-size:14px}
 .filebar > label:not(.btn){display:flex; align-items:center; gap:8px; font-size:15px}
+.filebar select{font:inherit; font-size:15px; padding:6px 8px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--tx)}
 input[type=checkbox]{accent-color:var(--dk); width:16px; height:16px}
 input[type=range]{accent-color:var(--dk)}
 
@@ -251,6 +253,9 @@ table.grid tr.doneRow td{background:#F2F7F3}
 .help li{position:relative; padding-left:24px; text-wrap:pretty}
 .help li::before{content:"·"; position:absolute; left:8px; color:var(--dk)}
 .help .glyph, .help g{font-family:var(--serif); font-size:1.1em}
+.help .helpFig{display:flex; flex-wrap:wrap; gap:16px; margin:10px 0 4px}
+.help .helpFig > span{display:flex; flex-direction:column; align-items:center; gap:2px}
+.help .helpFig img{height:76px; width:auto; border:1px solid var(--line); border-radius:4px; background:#fff}
 .bronze{position:absolute; z-index:0; top:-24px; bottom:-8px; left:730px; right:-200px; pointer-events:none;
   -webkit-mask:linear-gradient(90deg, transparent 0%, #000 24%, #000 54%, transparent 76%), linear-gradient(180deg, transparent 0%, #000 12%, #000 86%, transparent 100%);
   -webkit-mask-composite:source-in;
@@ -272,9 +277,59 @@ table.grid tr.doneRow td{background:#F2F7F3}
 .langTitle{font-size:18px; color:var(--tx2); margin-bottom:18px}
 .langList{display:flex; flex-direction:column; gap:10px}
 .langOpt{font-size:19px; padding:13px 18px; border:1.5px solid var(--line); background:#fff; border-radius:6px;
-  cursor:pointer; color:var(--tx); box-shadow:var(--shadowSm); font-family:'LXGW WenKai TC',serif}
+  cursor:pointer; color:var(--tx); box-shadow:var(--shadowSm); font-family:'JST Body','LXGW WenKai TC',serif}
 .langOpt[data-lang="en"]{font-family:'Newsreader',Georgia,serif}
 .langOpt.cur{border-color:var(--dk); color:var(--ink); font-weight:700}
+
+/* ===== 盲轉寫狀態列（與逐列校對的頁面列同一樣式，第 12b 輪） ===== */
+.statusbar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; padding:10px 16px;
+  background:#fff; border-radius:8px; box-shadow:var(--shadow); font-size:15px}
+.statusbar .tagBlind{font-size:13px; font-weight:700; padding:2px 10px; border-radius:4px; color:#fff;
+  background:linear-gradient(120deg, var(--ink), var(--dk))}
+.statusbar .count{font-variant-numeric:tabular-nums}
+.statusbar .count b{color:var(--ink)}
+.statusbar .meter{width:120px; height:6px; border-radius:3px; background:var(--tint); overflow:hidden}
+.statusbar .meter i{display:block; height:100%; background:linear-gradient(90deg, var(--dk), var(--lt))}
+.statusbar .sub{color:var(--tx2); font-size:14px}
+.statusbar .warnTxt{color:#8A5A0A}
+.statusbar .push{margin-left:auto; display:flex; gap:8px}
+
+/* ===== 進度提示（選資料夾後出現；版式仿 Daybook，配色跟隨校書臺） ===== */
+.progModal{position:fixed; inset:0; z-index:1000; display:none; justify-content:center; align-items:center; padding:16px;
+  background:color-mix(in srgb, var(--ink) 30%, rgba(20,18,16,.42)); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px)}
+.progModal.show{display:flex}
+.progBox{position:relative; width:min(460px, 100%); padding:34px 34px 24px; border-radius:16px; text-align:center; color:#fff;
+  font-family:var(--body); outline:none;
+  background:linear-gradient(165deg, color-mix(in srgb, var(--ink) 86%, #000) 0%, color-mix(in srgb, var(--ink) 62%, #000) 100%);
+  box-shadow:0 30px 70px -20px rgba(0,0,0,.6), 0 0 34px -10px color-mix(in srgb, var(--lt) 55%, transparent)}
+.progBox::before{content:""; position:absolute; inset:0; border-radius:16px; padding:1.5px; pointer-events:none;
+  background:linear-gradient(140deg, var(--lt) 0%, transparent 30%, transparent 62%, var(--dk) 82%, var(--lt) 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite:exclude}
+.progIcon{width:58px; height:58px; border-radius:13px; display:block; margin:0 auto 12px; box-shadow:0 8px 20px -8px rgba(0,0,0,.6)}
+.progTitle{font-family:var(--serif); font-weight:600; font-size:30px; line-height:1.25; letter-spacing:.04em}
+.progTitle b{color:var(--lt); font-weight:600}
+.progSub{font-size:17px; color:rgba(255,255,255,.84); margin:4px 0 20px}
+.progList{list-style:none; text-align:left; display:flex; flex-direction:column; gap:11px; margin:0 4px 24px}
+.progList li{position:relative; padding-left:24px; font-size:16px; line-height:1.55}
+.progList li::before{content:""; position:absolute; left:5px; top:.6em; width:8px; height:8px; border-radius:50%; background:var(--lt)}
+.progList li.warn::before{background:#E8B54E}
+.progList li .num{font-weight:700; font-variant-numeric:tabular-nums}
+.progList li .names{display:block; color:rgba(255,255,255,.7); font-size:14px; word-break:break-all}
+.progGo{width:100%; font-size:19px; font-weight:700; padding:14px; border:none; border-radius:10px; cursor:pointer;
+  background:var(--bg); color:var(--ink); box-shadow:0 10px 24px -12px rgba(0,0,0,.7); transition:transform .18s ease}
+.progGo:hover{transform:translateY(-2px)}
+.progGo:focus-visible{outline:3px solid var(--lt); outline-offset:3px}
+.progMore{display:flex; justify-content:center; gap:22px; margin-top:12px}
+.progMore button{background:none; border:none; color:rgba(255,255,255,.72); font-size:14px; cursor:pointer; padding:4px 2px}
+.progMore button:hover{color:#fff; text-decoration:underline}
+
+/* ===== 列影像：旋轉、閱讀方向、列序編號 ===== */
+.rotBtns{display:inline-flex; gap:6px; align-items:center}
+.rotBtns .pill{font-size:13px; padding:2px 8px; border-radius:4px; background:var(--tint); color:var(--tx2); font-variant-numeric:tabular-nums}
+.dirChip{font-size:13px; padding:3px 10px; border-radius:4px; background:color-mix(in srgb, var(--acc) 14%, #fff); color:var(--acc); font-weight:700}
+#locSvg text.lno{font-family:var(--sans); font-weight:700; fill:var(--ink); stroke:#fff; paint-order:stroke; text-anchor:middle; dominant-baseline:middle}
+.editMsg{font-size:14px; color:#8A5A0A; margin:4px 0 0}
 </style>
 </head>
 <body>
@@ -318,7 +373,7 @@ table.grid tr.doneRow td{background:#F2F7F3}
     <button class="btn small" id="btnToList" data-i18n="btn_to_list">回頁面清單</button>
     <span class="saveNote" id="saveNote"></span>
   </div>
-  <div id="blindBanner" class="banner warn hidden"></div>
+  <div id="blindBar" class="statusbar hidden"></div>
   <div id="revisitBanner" class="banner warn hidden" data-i18n="revisit_banner">這一頁已經校完了，你現在是在複查。若不打算改動，可以直接按「下一張未完成」。</div>
   <div class="stage">
     <div>
@@ -334,6 +389,9 @@ table.grid tr.doneRow td{background:#F2F7F3}
         <span id="zoomPct">100%</span>
         <label><input type="checkbox" id="ctxOn"><span data-i18n="ctx_label">顯示該列四周（只作參考，紅框內才是本列）</span></label>
         <button class="btn small" id="expLinePng" data-i18n="exp_line_png">導出本列影像 PNG</button>
+        <span class="rotBtns"><button class="btn small" id="rotL" data-i18n="rot_left">↺ 90°</button><button class="btn small" id="rotR" data-i18n="rot_right">↻ 90°</button><span class="pill hidden" id="rotPill"></span></span>
+        <span class="dirChip hidden" id="dirChip"></span>
+        <label><input type="checkbox" id="lnoOn"><span data-i18n="lno_label">整頁圖上顯示列序編號</span></label>
       </div>
       <div class="locator" id="locator"><img id="pageImg" data-i18n-alt="page_img_alt" alt="整頁影像"><svg id="locSvg" preserveAspectRatio="none"></svg></div>
       <div class="meta" id="lineMeta"></div>
@@ -404,6 +462,7 @@ table.grid tr.doneRow td{background:#F2F7F3}
     <button class="btn" id="clearPages" data-i18n="clear_pages">清空頁面清單</button>
     <button class="btn danger" id="clearProg" data-i18n="clear_prog">刪除本機校對進度</button>
   </div>
+  <div id="blindBarP" class="statusbar hidden"></div>
   <div id="reopenBar" class="banner ok hidden"><span id="reopenText"></span><button class="btn small" id="reopenBtn" data-i18n="reopen_btn">重新開啟</button></div>
   <div id="pairNote" class="banner ok hidden"></div>
   <div id="pageListOut" class="empty" data-i18n="pl_folder_hint">選一個資料夾，圖片與 XML 會依檔名自動配對。同一個資料夾裡混放也可以。</div>
@@ -425,7 +484,9 @@ table.grid tr.doneRow td{background:#F2F7F3}
     <label class="btn"><span data-i18n="load_A">載入 校對者A 的進度 JSON</span><input type="file" id="cmpA" accept=".json" class="hidden"></label>
     <label class="btn" id="cmpBLabel"><span data-i18n="load_B">載入 校對者B 的進度 JSON</span><input type="file" id="cmpB" accept=".json" class="hidden"></label>
     <button class="btn" id="expDis" data-i18n="exp_dis">導出分歧 CSV</button>
-    <label><input type="checkbox" id="foldOn" checked><span data-i18n="fold_label">舊字形與通行形視為一致（計算 IAA 時建議勾選）</span></label>
+    <label><span data-i18n="cmp_scheme_label">分歧列依此口徑</span><select id="cmpScheme"><option value="raw" data-i18n="sch_raw"></option><option value="t13" data-i18n="sch_t13"></option><option value="dict" data-i18n="sch_dict"></option><option value="geta" data-i18n="sch_geta"></option></select></label>
+    <label class="btn"><span data-i18n="cmp_filter_btn">只看清單上的頁</span><input type="file" id="cmpFilter" accept=".txt" class="hidden"></label>
+    <button class="btn small hidden" id="cmpFilterClear" data-i18n="cmp_filter_clear">取消篩選</button>
     <label><input type="checkbox" id="cmpFolder"><span data-i18n="cmp_folder_label">與資料夾的既有轉寫對照（只比 A 的盲轉寫列，即 IAA）</span></label>
   </div>
   <div id="cmpOut" class="empty" data-i18n="cmp_empty">載入兩份進度文件後，這裡會顯示字符一致率、分層一致率與分歧列。</div>
@@ -477,6 +538,16 @@ table.grid tr.doneRow td{background:#F2F7F3}
       <button class="langOpt" data-lang="zh-Hant">繁體中文</button>
       <button class="langOpt" data-lang="zh-Hans">简体中文</button>
     </div>
+  </div>
+</div>
+<div id="progModal" class="progModal">
+  <div class="progBox" role="dialog" aria-modal="true" aria-labelledby="progTitle" tabindex="-1">
+    <img class="progIcon" src="icons/icon-192.png" alt="">
+    <div class="progTitle" id="progTitle"><span>校</span><b>書</b><span>臺</span></div>
+    <div class="progSub" id="progSub"></div>
+    <ul class="progList" id="progList"></ul>
+    <button class="progGo" id="progGo"></button>
+    <div class="progMore"><button id="progLater" data-i18n="prog_later">稍後再說</button><button id="progRelease" class="hidden" data-i18n="prog_release">解除這份盲轉寫清單</button></div>
   </div>
 </div>
 <script>
@@ -531,16 +602,88 @@ const I18N = {
 "help_h_three":"四種列",
 "help_three1":"<b>正文列</b>：照圖錄文。",
 "help_three2":"<b>夾註列</b>：正文中間的雙行小字，每個框只應包含其中一列。若一個框裡框進了兩列小字，請用「異常反饋」。",
-"help_three3":"<b>圖上標籤</b>：圖版上零散分佈的地名、星官名、方位、里程等短標。框內的字照順序錄，各標籤之間沒有先後。圖版旁成段的文字（如界至、圖說）屬於正文列，與正文一樣由右至左閱讀；若順序有誤，請用「異常反饋」。",
+"help_three3":"<b>圖上標籤</b>：圖版上零散分佈的地名、星官名、方位、里程等短標。各標籤之間沒有先後；每個標籤之內按書寫方向錄：直寫由上而下，橫寫與正文一樣由右至左。斜寫或倒寫的，可用列影像下方的旋轉按鈕轉正再讀；排列不規則的，由你自行判斷。圖版旁成段的文字（如界至、圖說）屬於正文列，與正文一樣閱讀；若順序有誤，請用「異常反饋」。",
 "help_h_sym":"特殊符號",
 "help_three4":"<b>題名列</b>：題區內的一列，照圖錄文。",
-"help_sym1":"<b>□ 看不清的字</b>：書上這裡有字，但因漫漶、蟲蛀、缺損或掃描不清而無法辨認，一個字錄一個 □。字形清楚、只是認不出的字，也錄 □，並在備註寫「字形清楚，未能識別」。",
-"help_sym2":"<b>〓 找不到的字</b>：認得字形，但照「錄字規則」的順序都找不到，而且與通行字有部件上的差別。一個字錄一個 〓，並在備註描述字形，知道碼位的也一併寫上，例如「左土右遺，U+2D3F8」。",
+"help_sym1":"<b>□ 看不清的字</b>：書上這裡有字，但因漫漶、蟲蛀、缺損或掃描不清而無法辨認，一個字錄一個 □。字形清楚、只是認不出的，錄 〓（見下條）。",
+"help_sym2":"<b>〓 找不到的字</b>：認不出是哪個字，或看得出部件、但 Unicode 裡沒有這個字時用（見「都找不到時」）。一個字錄一個 〓，並在備註寫出部件和位置，如「左○右○」（○ 換成認得出的部件）。認得是哪個字、只是找不到相同字形的，錄通行字，不用 〓。",
 "help_sym3":"錄文框下方：「插入 □」「插入 〓」插入符號，也可按 ⌥/Alt+1、⌥/Alt+2；「不易輸入的字」一排按鈕可直接插入該字；「字形存疑」「誤刻…」標注游標前的那個字，標注列在按鈕下方，按 × 可取消。覆核時按「標注字形…」，也會出現這些按鈕。",
 "help_h_two":"兩條提醒",
 "help_two1":"書上的朱筆圈點是句讀符號，錄文時略去。",
 "help_two2":"轉錄面板下方頁面原圖可以直接點擊某一列跳轉；綠色表示已經校過。",
-"footer":"校書臺 v0.6 · 單文件離線運行 · 數據只存在本機",
+"footer":"校書臺 v0.7 · 單文件離線運行 · 數據只存在本機",
+"rot_left":"↺ 90°",
+"rot_right":"↻ 90°",
+"lno_label":"整頁圖上顯示列序編號",
+"cmp_scheme_label":"分歧列依此口徑",
+"sch_raw":"未折合（僅 NFC）",
+"sch_t13":"舊 13 對表",
+"sch_dict":"字典規則（等價表 v2）",
+"sch_geta":"字典規則加 〓 計分",
+"cmp_filter_btn":"只看清單上的頁",
+"cmp_filter_clear":"取消篩選",
+"prog_later":"稍後再說",
+"prog_release":"解除這份盲轉寫清單",
+"old_form_title_desc":"插入 {c}（{u}，{d}）",
+"desc_lr":"左{a}右{b}",
+"desc_tb":"上{a}下{b}",
+"desc_tmb":"上{a}中{b}下{c}",
+"desc_wrap":"外{a}內{b}",
+"blind_released_chip":"已撤回",
+"bb_count":"已完成 <b>{d}</b> / {n} 頁",
+"bb_unmatched":"{n} 頁還沒有配上檔案",
+"bb_next":"下一張盲轉寫頁 →",
+"bb_info":"詳情",
+"bb_sub_locked":"這一頁要等盲轉寫全部完成才能覆核。",
+"bb_sub_list":"盲轉寫完成之前，其他頁的覆核與兩人對照暫不開放。",
+"prog_sub_blind":"盲轉寫尚未完成",
+"prog_blind_left":"還有 <span class='num'>{n}</span> 頁待盲轉寫，已完成 {d} 頁",
+"prog_unmatched":"<span class='num'>{n}</span> 頁還沒有配上檔案。請選擇存放這些頁的資料夾；若這些頁已不需要盲轉寫，請向負責人索取撤回清單。",
+"prog_locked_note":"盲轉寫全部完成之前，其他頁的覆核與兩人對照暫不開放。",
+"prog_go_blind":"開始盲轉寫",
+"prog_go_list":"到頁面清單",
+"prog_sub_review":"校對進度",
+"prog_pages":"共 <span class='num'>{n}</span> 頁，已完成 {d} 頁",
+"prog_lines":"還有 <span class='num'>{n}</span> 列待校",
+"prog_unread":"（另有 {n} 頁尚未讀取）",
+"prog_blind_all_done":"盲轉寫已全部完成",
+"prog_go_review":"繼續校對",
+"prog_go_done":"全部完成",
+"prog_has_text":"有 <span class='num'>{n}</span> 個盲轉寫頁的 XML 帶有既有轉寫。校書臺不會顯示，但用其他軟件打開檔案會看到。請改用負責人提供的去文字檔案。",
+"prog_no_coords":"<span class='num'>{p}</span> 頁共 {n} 列沒有框，校書臺無法顯示這些列，請告知負責人。",
+"prog_other_txt":"資料夾裡有 {n} 個認不出的文字檔。盲轉寫清單的檔名須以 blind_pages 開頭：",
+"prog_release_confirm":"要撤回清單上 {n} 頁未完成的盲轉寫嗎？撤回後這些頁改為一般覆核，會顯示既有轉寫。",
+"blind_need_files":"還有盲轉寫頁沒有配上檔案。請選擇存放這些頁的資料夾，或向負責人索取撤回清單。",
+"pua_refused":"錄文裡有私用區字碼（{list}），沒有存檔。這類字碼只在個別網站或字型裡顯示得出來，換一台電腦就不是同一個字。請改錄 〓，並在備註寫出部件和位置。",
+"pua_live":"這段錄文裡有私用區字碼，存檔時會被拒收。請改錄 〓，並在備註描述字形。",
+"nl_blocked":"錄文不換行；錄完請按下方的確認按鈕。",
+"nl_removed":"已去掉貼上的換行：一列錄文不換行。",
+"dir_rtl":"橫寫：由右至左讀",
+"a_nocoords":"缺少多邊形",
+"a_nocoords_d":"這一列在 XML 裡沒有 Coords，校書臺無法裁切，校者看不到它",
+"a_fewpts_skip_d":"多邊形只有 {n} 點，校書臺無法裁切，校者看不到它",
+"a_order_page":"列序可能有誤",
+"a_order_page_d":"全頁按顯示順序有 {n} 處由左跳回右（按列序編號）：{list}",
+"cmp_none_pairs":"兩份進度沒有共同判定的列。",
+"cmp_head":"已對照 <b>{n}</b> 列、{c} 字（每列取兩方較長者）",
+"cmp_filter_on":"只看清單「{file}」上的 {n} 頁。",
+"cmp_th_scheme":"口徑",
+"cmp_th_dist":"編輯距離",
+"cmp_th_chars":"字數",
+"eqv_ver":"字典規則用等價表 v2：24 對，2026 年 11 月 2 日核實；字對不分主從。",
+"cmp_note_big5":"讀不到 Big5 字表（big5.txt），〓 計分的口徑暫不計算。",
+"cmp_note_inferred":"{n} 列的紀錄沒有記下按鈕版本，依錄文時間推定（2026 年 11 月 4 日以前視為沒有按鈕）。",
+"cmp_note_trans":"{n} 列是在沒有候選文字的列上，用覆核模式錄的轉寫；校者沒有看過既有轉寫，按獨立轉寫計入。",
+"cmp_fig_note":"圖上標籤 {n} 列，按標籤一對一對照，標籤之內計字序。其中 {r} 列與對方整條逐字倒置。不計閱讀方向（事後分析：每列取正讀、倒讀中較接近者）的未折合字符一致率為 {p}。",
+"cls_variant":"僅異體",
+"cls_geta":"〓 對齊",
+"cls_real":"實質",
+"cmp_dis_head":"依「{s}」仍有分歧的 {n} 列：",
+"cmp_th_class":"類別",
+"inferred":"推定",
+"src_blind":"盲轉寫",
+"src_trans":"覆核錄文（無候選文字）",
+"src_review":"覆核",
 "lang_modal_title":"語言 · 语言 · Language",
 "region_Main":"正文區","region_Interlinear":"夾註區","region_Figure":"圖區","region_Title":"題區","region_Page":"頁面",
 "line_Main":"正文列","line_Interlinear":"夾註列","line_figureLabel":"圖上標籤","line_figureTitle":"題名列",
@@ -564,7 +707,7 @@ const I18N = {
 "line_word":"列 ","region_word":"　區域 ","no_region_warn":"　⚠ 這一列不屬於任何區域",
 "hint_notonto_pre":"類型字串不在本體之內：","hint_notonto_suf":"。請告知專案負責人。","empty_paren":"（空）",
 "hint_has_illegible":"　本列有 □：表示此處字跡不可辨。若你能辨認，請改為該字；不能辨認就照樣保留。",
-"hint_has_geta":"　本列有 〓：表示此字認得，但找不到可用的字，已另行登記。請照樣保留，不要改成形近的字。",
+"hint_has_geta":"　本列有 〓：表示此字認不出，或 Unicode 裡沒有這個字，已另行登記。請照樣保留，不要改成形近的字。",
 "blind_chip":"盲轉寫","blind_toggle":"本頁盲轉寫",
 "blind_toggle_has_review":"這一頁已有覆核紀錄，不能改成盲轉寫。",
 "blind_toggle_off_confirm":"這一頁的盲轉寫還沒完成，關閉之後可能隨即顯示既有轉寫。確定關閉？","blind_banner":"盲轉寫模式：不顯示既有轉寫，請照圖錄文。",
@@ -574,8 +717,8 @@ const I18N = {
 "cmp_no_blind":"目前沒有可對照的盲轉寫列：請載入獨立轉寫者的進度 JSON（A），並在「頁面清單」選擇同一個工作資料夾。",
 "ins_box":"插入 □","ins_geta":"插入 〓",
 "v_mark":"標注字形…","mark_prompt":"在字上標注「字形存疑」或「誤刻」；若有錯字，也可以直接修改。文字沒有改動時，存為「一致」。","mark_save":"確認",
-"help_h_rule":"錄字規則","help_rule1":"<b>照書上的字形錄</b>：書上的字形若另有其字，就照書上錄，不要改成通行字；看起來像簡化字的也一樣。例如書上作 <g>爲</g> 錄 <g>爲</g>，不錄 <g>為</g>；作 <g>靑</g> 錄 <g>靑</g>；作 <g>矶</g> 錄 <g>矶</g>。","help_rule2":"<b>找字的順序</b>：先在錄文框下方「不易輸入的字」一排按鈕裡找，<g>卽</g>、<g>屛</g>、<g>塡</g>、<g>倂</g>、<g>吿</g> 等字都可以直接點按插入；找不到，再用輸入法找，也可以試手寫輸入（例如 Mac 的觸控式軌跡板手寫）。",
-"help_rule3":"<b>都找不到時</b>：書上的字與通行字只是筆畫小異（如缺筆、筆畫長短），錄通行字；有部件上的差別（如右邊作 <g>靑</g> 的 <g>精</g>），錄 〓，並在備註描述字形，例如「左米右<g>靑</g>」。","help_rule4":"<b>字形存疑</b>：遇到字形無法確定、依照上下文決定的情況（例如 <g>己</g>、<g>已</g>、<g>巳</g> 是否封口，<g>日</g>、<g>曰</g> 的寬窄），按照你的判斷錄入，再把游標放在該字後面（或選中該字），按「字形存疑」。","help_rule5":"<b>誤刻</b>：字形看得清楚，但你認為刻錯了，形近的另一個字才合文意（例如把 <g>裨</g> 刻成 <g>禆</g>），仍照書上錄，再把游標放在該字後面，按「誤刻…」，填上文意所指的字。通假、古今字、異體都不是誤刻，不要標。",
+"help_h_rule":"錄字規則","help_rule1":"<b>照書上的字形錄</b>：書上的字若有對應的字，而且字形與那個字相同（筆畫粗細、刻寫筆勢不計），就照書上錄，如 <g>爲</g>、<g>靑</g>、<g>卽</g>，不要改成通行字；看起來像簡化字的也一樣，如 <g>矶</g>。","help_rule2":"<b>找字的順序</b>：先在錄文框下方「不易輸入的字」一排按鈕裡找，<g>卽</g>、<g>屛</g>、<g>塡</g>、<g>倂</g>、<g>吿</g> 等字都可以直接點按插入；找不到，再用輸入法找，也可以試手寫輸入（例如 Mac 的觸控式軌跡板手寫）。",
+"help_rule3":"<b>都找不到時</b>：找不到與書上字形相同的字，但認得是哪個字，就錄通行字，如 <g>領</g>、<g>直</g>（見書影）。認不出是哪個字；或看得出部件，但它不是哪個字的另一種寫法，Unicode 裡也沒有，才錄 〓，並在備註寫出部件和位置，如「左○右○」（○ 換成認得出的部件）。字跡因漫漶、蟲蛀、缺損而無法辨認的，錄 □（見「特殊符號」）。<span class=\"helpFig\"><span><img src=\"img/help_ling.png\" alt=\"書影：領\"><g>領</g></span><span><img src=\"img/help_zhi.png\" alt=\"書影：直\"><g>直</g></span></span>","help_rule4":"<b>字形存疑</b>：遇到字形無法確定、依照上下文決定的情況（例如 <g>己</g>、<g>已</g>、<g>巳</g> 是否封口，<g>日</g>、<g>曰</g> 的寬窄），按照你的判斷錄入，再把游標放在該字後面（或選中該字），按「字形存疑」。","help_rule5":"<b>誤刻</b>：字形看得清楚，但你認為刻錯了，形近的另一個字才合文意（例如把 <g>裨</g> 刻成 <g>禆</g>），仍照書上錄，再把游標放在該字後面，按「誤刻…」，填上文意所指的字。通假、古今字、異體都不是誤刻，不要標。",
 "old_forms_label":"不易輸入的字","old_form_title":"插入 {c}（{u}）","mark_unclear_btn":"字形存疑",
 "mark_reading_btn":"誤刻…","mark_reading_ph":"文意所指的字","mark_ok":"確定",
 "mark_unclear_chip":"存疑：第 {n} 字","mark_reading_chip":"誤刻：第 {n} 字","mark_reading_as":"當作",
@@ -663,16 +806,88 @@ const I18N = {
 "help_h_three":"四种列",
 "help_three1":"<b>正文列</b>：照图录文。",
 "help_three2":"<b>夹注列</b>：正文中间的双行小字，每个框只应包含其中一列。若一个框里框进了两列小字，请用“异常反馈”。",
-"help_three3":"<b>图上标签</b>：图版上零散分布的地名、星官名、方位、里程等短标。框内的字照顺序录，各标签之间没有先后。图版旁成段的文字（如界至、图说）属于正文列，与正文一样由右至左阅读；若顺序有误，请用“异常反馈”。",
+"help_three3":"<b>图上标签</b>：图版上零散分布的地名、星官名、方位、里程等短标。各标签之间没有先后；每个标签之内按书写方向录：直写由上而下，横写与正文一样由右至左。斜写或倒写的，可用列影像下方的旋转按钮转正再读；排列不规则的，由你自行判断。图版旁成段的文字（如界至、图说）属于正文列，与正文一样阅读；若顺序有误，请用“异常反馈”。",
 "help_h_sym":"特殊符号",
 "help_three4":"<b>题名列</b>：题区内的一列，照图录文。",
-"help_sym1":"<b>□ 看不清的字</b>：书上这里有字，但因漫漶、虫蛀、缺损或扫描不清而无法辨认，一个字录一个 □。字形清楚、只是认不出的字，也录 □，并在备注写“字形清楚，未能识别”。",
-"help_sym2":"<b>〓 找不到的字</b>：认得字形，但照“录字规则”的顺序都找不到，而且与通行字有部件上的差别。一个字录一个 〓，并在备注描述字形，知道码位的也一并写上，例如“左土右遗，U+2D3F8”。",
+"help_sym1":"<b>□ 看不清的字</b>：书上这里有字，但因漫漶、虫蛀、缺损或扫描不清而无法辨认，一个字录一个 □。字形清楚、只是认不出的，录 〓（见下条）。",
+"help_sym2":"<b>〓 找不到的字</b>：认不出是哪个字，或看得出部件、但 Unicode 里没有这个字时用（见“都找不到时”）。一个字录一个 〓，并在备注写出部件和位置，如“左○右○”（○ 换成认得出的部件）。认得是哪个字、只是找不到相同字形的，录通行字，不用 〓。",
 "help_sym3":"录文框下方：“插入 □”“插入 〓”插入符号，也可按 ⌥/Alt+1、⌥/Alt+2；“不易输入的字”一排按钮可直接插入该字；“字形存疑”“误刻…”标注光标前的那个字，标注列在按钮下方，按 × 可取消。复核时按“标注字形…”，也会出现这些按钮。",
 "help_h_two":"两条提醒",
 "help_two1":"书上的朱笔圈点是句读符号，录文时略去。",
 "help_two2":"转录面板下方页面原图可以直接点击某一列跳转；绿色表示已经校过。",
-"footer":"校书台 v0.6 · 单文件离线运行 · 数据只存在本机",
+"footer":"校书台 v0.7 · 单文件离线运行 · 数据只存在本机",
+"rot_left":"↺ 90°",
+"rot_right":"↻ 90°",
+"lno_label":"整页图上显示列序编号",
+"cmp_scheme_label":"分歧列依此口径",
+"sch_raw":"未折合（仅 NFC）",
+"sch_t13":"旧 13 对表",
+"sch_dict":"字典规则（等价表 v2）",
+"sch_geta":"字典规则加 〓 计分",
+"cmp_filter_btn":"只看清单上的页",
+"cmp_filter_clear":"取消筛选",
+"prog_later":"稍后再说",
+"prog_release":"解除这份盲转写清单",
+"old_form_title_desc":"插入 {c}（{u}，{d}）",
+"desc_lr":"左{a}右{b}",
+"desc_tb":"上{a}下{b}",
+"desc_tmb":"上{a}中{b}下{c}",
+"desc_wrap":"外{a}内{b}",
+"blind_released_chip":"已撤回",
+"bb_count":"已完成 <b>{d}</b> / {n} 页",
+"bb_unmatched":"{n} 页还没有配上文件",
+"bb_next":"下一张盲转写页 →",
+"bb_info":"详情",
+"bb_sub_locked":"这一页要等盲转写全部完成才能复核。",
+"bb_sub_list":"盲转写完成之前，其他页的复核与两人对照暂不开放。",
+"prog_sub_blind":"盲转写尚未完成",
+"prog_blind_left":"还有 <span class='num'>{n}</span> 页待盲转写，已完成 {d} 页",
+"prog_unmatched":"<span class='num'>{n}</span> 页还没有配上文件。请选择存放这些页的文件夹；若这些页已不需要盲转写，请向负责人索取撤回清单。",
+"prog_locked_note":"盲转写全部完成之前，其他页的复核与两人对照暂不开放。",
+"prog_go_blind":"开始盲转写",
+"prog_go_list":"到页面清单",
+"prog_sub_review":"校对进度",
+"prog_pages":"共 <span class='num'>{n}</span> 页，已完成 {d} 页",
+"prog_lines":"还有 <span class='num'>{n}</span> 列待校",
+"prog_unread":"（另有 {n} 页尚未读取）",
+"prog_blind_all_done":"盲转写已全部完成",
+"prog_go_review":"继续校对",
+"prog_go_done":"全部完成",
+"prog_has_text":"有 <span class='num'>{n}</span> 个盲转写页的 XML 带有既有转写。校书台不会显示，但用其他软件打开文件会看到。请改用负责人提供的去文字文件。",
+"prog_no_coords":"<span class='num'>{p}</span> 页共 {n} 列没有框，校书台无法显示这些列，请告知负责人。",
+"prog_other_txt":"文件夹里有 {n} 个认不出的文本文件。盲转写清单的文件名须以 blind_pages 开头：",
+"prog_release_confirm":"要撤回清单上 {n} 页未完成的盲转写吗？撤回后这些页改为一般复核，会显示既有转写。",
+"blind_need_files":"还有盲转写页没有配上文件。请选择存放这些页的文件夹，或向负责人索取撤回清单。",
+"pua_refused":"录文里有私用区字码（{list}），没有存档。这类字码只在个别网站或字体里显示得出来，换一台电脑就不是同一个字。请改录 〓，并在备注写出部件和位置。",
+"pua_live":"这段录文里有私用区字码，存档时会被拒收。请改录 〓，并在备注描述字形。",
+"nl_blocked":"录文不换行；录完请按下方的确认按钮。",
+"nl_removed":"已去掉粘贴的换行：一列录文不换行。",
+"dir_rtl":"横写：由右至左读",
+"a_nocoords":"缺少多边形",
+"a_nocoords_d":"这一列在 XML 里没有 Coords，校书台无法裁切，校者看不到它",
+"a_fewpts_skip_d":"多边形只有 {n} 点，校书台无法裁切，校者看不到它",
+"a_order_page":"列序可能有误",
+"a_order_page_d":"全页按显示顺序有 {n} 处由左跳回右（按列序编号）：{list}",
+"cmp_none_pairs":"两份进度没有共同判定的列。",
+"cmp_head":"已对照 <b>{n}</b> 列、{c} 字（每列取两方较长者）",
+"cmp_filter_on":"只看清单“{file}”上的 {n} 页。",
+"cmp_th_scheme":"口径",
+"cmp_th_dist":"编辑距离",
+"cmp_th_chars":"字数",
+"eqv_ver":"字典规则用等价表 v2：24 对，2026 年 11 月 2 日核实；字对不分主从。",
+"cmp_note_big5":"读不到 Big5 字表（big5.txt），〓 计分的口径暂不计算。",
+"cmp_note_inferred":"{n} 列的记录没有记下按钮版本，依录文时间推定（2026 年 11 月 4 日以前视为没有按钮）。",
+"cmp_note_trans":"{n} 列是在没有候选文字的列上，用复核模式录的转写；校者没有看过既有转写，按独立转写计入。",
+"cmp_fig_note":"图上标签 {n} 列，按标签一对一对照，标签之内计字序。其中 {r} 列与对方整条逐字倒置。不计阅读方向（事后分析：每列取正读、倒读中较接近者）的未折合字符一致率为 {p}。",
+"cls_variant":"仅异体",
+"cls_geta":"〓 对齐",
+"cls_real":"实质",
+"cmp_dis_head":"依“{s}”仍有分歧的 {n} 列：",
+"cmp_th_class":"类别",
+"inferred":"推定",
+"src_blind":"盲转写",
+"src_trans":"复核录文（无候选文字）",
+"src_review":"复核",
 "lang_modal_title":"语言 · 語言 · Language",
 "region_Main":"正文区","region_Interlinear":"夹注区","region_Figure":"图区","region_Title":"题区","region_Page":"页面",
 "line_Main":"正文列","line_Interlinear":"夹注列","line_figureLabel":"图上标签","line_figureTitle":"题名列",
@@ -696,7 +911,7 @@ const I18N = {
 "line_word":"列 ","region_word":"　区域 ","no_region_warn":"　⚠ 这一列不属于任何区域",
 "hint_notonto_pre":"类型字符串不在本体之内：","hint_notonto_suf":"。请告知项目负责人。","empty_paren":"（空）",
 "hint_has_illegible":"　本列有 □：表示此处字迹不可辨。若你能辨认，请改为该字；不能辨认就照样保留。",
-"hint_has_geta":"　本列有 〓：表示此字认得，但找不到可用的字，已另行登记。请照样保留，不要改成形近的字。",
+"hint_has_geta":"　本列有 〓：表示此字认不出，或 Unicode 里没有这个字，已另行登记。请照样保留，不要改成形近的字。",
 "blind_chip":"盲转写","blind_toggle":"本页盲转写",
 "blind_toggle_has_review":"这一页已有复核记录，不能改成盲转写。",
 "blind_toggle_off_confirm":"这一页的盲转写还没完成，关闭之后可能随即显示既有转写。确定关闭？","blind_banner":"盲转写模式：不显示既有转写，请照图录文。",
@@ -706,8 +921,8 @@ const I18N = {
 "cmp_no_blind":"目前没有可对照的盲转写列：请载入独立转写者的进度 JSON（A），并在“页面清单”选择同一个工作资料夹。",
 "ins_box":"插入 □","ins_geta":"插入 〓",
 "v_mark":"标注字形…","mark_prompt":"在字上标注“字形存疑”或“误刻”；若有错字，也可以直接修改。文字没有改动时，存为“一致”。","mark_save":"确认",
-"help_h_rule":"录字规则","help_rule1":"<b>照书上的字形录</b>：书上的字形若另有其字，就照书上录，不要改成通行字；看起来像简化字的也一样。例如书上作 <g>爲</g> 录 <g>爲</g>，不录 <g>為</g>；作 <g>靑</g> 录 <g>靑</g>；作 <g>矶</g> 录 <g>矶</g>。","help_rule2":"<b>找字的顺序</b>：先在录文框下方“不易输入的字”一排按钮里找，<g>卽</g>、<g>屛</g>、<g>塡</g>、<g>倂</g>、<g>吿</g> 等字都可以直接点按插入；找不到，再用输入法找，也可以试手写输入（例如 Mac 的触控板手写）。",
-"help_rule3":"<b>都找不到时</b>：书上的字与通行字只是笔画小异（如缺笔、笔画长短），录通行字；有部件上的差别（如右边作 <g>靑</g> 的 <g>精</g>），录 〓，并在备注描述字形，例如“左米右<g>靑</g>”。","help_rule4":"<b>字形存疑</b>：遇到字形无法确定、依照上下文决定的情况（例如 <g>己</g>、<g>已</g>、<g>巳</g> 是否封口，<g>日</g>、<g>曰</g> 的宽窄），按照你的判断录入，再把光标放在该字后面（或选中该字），按“字形存疑”。","help_rule5":"<b>误刻</b>：字形看得清楚，但你认为刻错了，形近的另一个字才合文意（例如把 <g>裨</g> 刻成 <g>禆</g>），仍照书上录，再把光标放在该字后面，按“误刻…”，填上文意所指的字。通假、古今字、异体都不是误刻，不要标。",
+"help_h_rule":"录字规则","help_rule1":"<b>照书上的字形录</b>：书上的字若有对应的字，而且字形与那个字相同（笔画粗细、刻写笔势不计），就照书上录，如 <g>爲</g>、<g>靑</g>、<g>卽</g>，不要改成通行字；看起来像简化字的也一样，如 <g>矶</g>。","help_rule2":"<b>找字的顺序</b>：先在录文框下方“不易输入的字”一排按钮里找，<g>卽</g>、<g>屛</g>、<g>塡</g>、<g>倂</g>、<g>吿</g> 等字都可以直接点按插入；找不到，再用输入法找，也可以试手写输入（例如 Mac 的触控板手写）。",
+"help_rule3":"<b>都找不到时</b>：找不到与书上字形相同的字，但认得是哪个字，就录通行字，如 <g>領</g>、<g>直</g>（见书影）。认不出是哪个字；或看得出部件，但它不是哪个字的另一种写法，Unicode 里也没有，才录 〓，并在备注写出部件和位置，如“左○右○”（○ 换成认得出的部件）。字迹因漫漶、虫蛀、缺损而无法辨认的，录 □（见“特殊符号”）。<span class=\"helpFig\"><span><img src=\"img/help_ling.png\" alt=\"书影：領\"><g>領</g></span><span><img src=\"img/help_zhi.png\" alt=\"书影：直\"><g>直</g></span></span>","help_rule4":"<b>字形存疑</b>：遇到字形无法确定、依照上下文决定的情况（例如 <g>己</g>、<g>已</g>、<g>巳</g> 是否封口，<g>日</g>、<g>曰</g> 的宽窄），按照你的判断录入，再把光标放在该字后面（或选中该字），按“字形存疑”。","help_rule5":"<b>误刻</b>：字形看得清楚，但你认为刻错了，形近的另一个字才合文意（例如把 <g>裨</g> 刻成 <g>禆</g>），仍照书上录，再把光标放在该字后面，按“误刻…”，填上文意所指的字。通假、古今字、异体都不是误刻，不要标。",
 "old_forms_label":"不易输入的字","old_form_title":"插入 {c}（{u}）","mark_unclear_btn":"字形存疑",
 "mark_reading_btn":"误刻…","mark_reading_ph":"文意所指的字","mark_ok":"确定",
 "mark_unclear_chip":"存疑：第 {n} 字","mark_reading_chip":"误刻：第 {n} 字","mark_reading_as":"当作",
@@ -795,16 +1010,88 @@ const I18N = {
 "help_h_three":"The four line types",
 "help_three1":"<b>Main line</b>: transcribe exactly as shown.",
 "help_three2":"<b>Interlinear line</b>: the double-column small text within the main text. Each box should hold only one of the two columns; if a box holds both, use 'Report issue'.",
-"help_three3":"<b>Figure label</b>: scattered short labels on a map or star chart, such as place names, star names, directions and distances. Enter the characters in each box in order; the labels have no order among themselves. Continuous text beside a figure, such as boundary notes or captions, is a main line and, like all main text, reads right to left; if its order is wrong, use 'Report issue'.",
+"help_three3":"<b>Figure label</b>: scattered short labels on a map or star chart, such as place names, star names, directions and distances. The labels have no order among themselves; within each label, follow its writing direction: vertical labels read top to bottom, horizontal ones right to left like the main text. Use the rotate buttons below the line image to turn slanted or upside-down labels upright before reading; where the layout is irregular, use your own judgment. Continuous text beside a figure, such as boundary notes or captions, is a main line and reads like the main text; if its order is wrong, use 'Report issue'.",
 "help_h_sym":"Special symbols",
 "help_three4":"<b>Title line</b>: a line in a title region; transcribe exactly as shown.",
-"help_sym1":"<b>□ for a character you cannot read</b>: there is a character here, but wear, worm damage, loss or a poor scan makes it illegible. Enter one □ per character. If the shape is clear but you cannot identify the character, also enter □ and write \"shape clear, not identified\" in the note.",
-"help_sym2":"<b>〓 for a character you cannot find</b>: you recognise the form, but following the order in 'Entering characters' you cannot find it, and a component differs from the standard character. Enter one 〓 per character and describe its shape in the note, with the code point if you know it, e.g. \"土 left, 遺 right, U+2D3F8\".",
+"help_sym1":"<b>□ for a character you cannot read</b>: there is a character here, but wear, worm damage, loss or a poor scan makes it illegible. Enter one □ per character. If the shape is clear but you cannot identify the character, enter 〓 (see below).",
+"help_sym2":"<b>〓 for a character you cannot find</b>: use it when you cannot tell which character it is, or when you can see its components but Unicode does not have it (see 'If you cannot find it'). Enter one 〓 per character and give the components and their positions in the note, e.g. 'left ○, right ○', with each ○ replaced by a component you can make out. If you know which character it is but cannot find the same form, enter the standard character, not 〓.",
 "help_sym3":"Below the text box: 'Insert □' and 'Insert 〓' insert the symbols (⌥/Alt+1 and ⌥/Alt+2 do the same); the row of 'Hard-to-type characters' buttons inserts those characters; 'Form uncertain' and 'Miscarved…' mark the character just before the cursor. Marks are listed below the buttons; click × to remove one. In review, 'Mark characters…' opens the same buttons.",
 "help_h_two":"Two reminders",
 "help_two1":"The vermilion circles and dots on the page are punctuation marks; leave them out of the transcription.",
 "help_two2":"Click any line on the page image below the transcription panel to jump to it; green means already checked.",
-"footer":"Proofreading Desk v0.6 · single file, runs offline · data stays on your machine",
+"footer":"Proofreading Desk v0.7 · single file, runs offline · data stays on your machine",
+"rot_left":"↺ 90°",
+"rot_right":"↻ 90°",
+"lno_label":"Show line numbers on the page image",
+"cmp_scheme_label":"List disagreements under",
+"sch_raw":"Unfolded (NFC only)",
+"sch_t13":"Old 13-pair table",
+"sch_dict":"Dictionary rule (table v2)",
+"sch_geta":"Dictionary rule with 〓 scoring",
+"cmp_filter_btn":"Only pages on a list",
+"cmp_filter_clear":"Clear filter",
+"prog_later":"Later",
+"prog_release":"Release this blind list",
+"old_form_title_desc":"Insert {c} ({u}, {d})",
+"desc_lr":"left {a}, right {b}",
+"desc_tb":"top {a}, bottom {b}",
+"desc_tmb":"top {a}, middle {b}, bottom {c}",
+"desc_wrap":"{a} enclosing {b}",
+"blind_released_chip":"Released",
+"bb_count":"<b>{d}</b> of {n} pages done",
+"bb_unmatched":"{n} pages not yet matched to files",
+"bb_next":"Next blind page →",
+"bb_info":"Details",
+"bb_sub_locked":"This page opens for review once all blind pages are done.",
+"bb_sub_list":"Until blind transcription is done, review of other pages and Compare stay closed.",
+"prog_sub_blind":"Blind transcription in progress",
+"prog_blind_left":"<span class='num'>{n}</span> pages left to transcribe blind, {d} done",
+"prog_unmatched":"<span class='num'>{n}</span> pages are not yet matched to files. Select the folder that holds them; if they no longer need blind transcription, ask the project lead for a release list.",
+"prog_locked_note":"Until all blind pages are done, review of other pages and Compare stay closed.",
+"prog_go_blind":"Start blind transcription",
+"prog_go_list":"Go to the page list",
+"prog_sub_review":"Progress",
+"prog_pages":"<span class='num'>{n}</span> pages, {d} done",
+"prog_lines":"<span class='num'>{n}</span> lines left to check",
+"prog_unread":" ({n} more pages not read yet)",
+"prog_blind_all_done":"Blind transcription is complete",
+"prog_go_review":"Continue",
+"prog_go_done":"All done",
+"prog_has_text":"The XML of <span class='num'>{n}</span> blind pages contains existing transcriptions. The Desk does not show them, but other programs would. Please use the stripped files from the project lead.",
+"prog_no_coords":"<span class='num'>{n}</span> lines on {p} pages have no box, so the Desk cannot show them. Please tell the project lead.",
+"prog_other_txt":"The folder has {n} text files the Desk does not recognise. A blind list must have a name starting with blind_pages:",
+"prog_release_confirm":"Release the {n} unfinished pages on the blind list? They become ordinary review pages and show the existing transcription.",
+"blind_need_files":"Some blind pages are not yet matched to files. Select the folder that holds them, or ask the project lead for a release list.",
+"pua_refused":"The transcription contains private-use code points ({list}), so it was not saved. They display only on particular websites or fonts and mean nothing elsewhere. Enter 〓 instead and give the components and their positions in the note.",
+"pua_live":"This transcription contains a private-use code point and will be refused when you save. Enter 〓 and describe the form in the note.",
+"nl_blocked":"A transcription is a single line; when you are done, press the confirm button below.",
+"nl_removed":"Removed the line breaks you pasted: a transcription is a single line.",
+"dir_rtl":"Horizontal: read right to left",
+"a_nocoords":"No polygon",
+"a_nocoords_d":"This line has no Coords in the XML, so the Desk cannot crop it and collators never see it",
+"a_fewpts_skip_d":"The polygon has only {n} points, so the Desk cannot crop it and collators never see it",
+"a_order_page":"Possible line-order error",
+"a_order_page_d":"In display order the page jumps back to the right {n} times (by line number): {list}",
+"cmp_none_pairs":"The two files have no lines judged in both.",
+"cmp_head":"Compared <b>{n}</b> lines, {c} characters (the longer of the two in each line)",
+"cmp_filter_on":"Only the {n} pages on '{file}'.",
+"cmp_th_scheme":"Scheme",
+"cmp_th_dist":"Edit distance",
+"cmp_th_chars":"Characters",
+"eqv_ver":"The dictionary rule uses equivalence table v2: 24 pairs, verified on 2 November 2026; neither member of a pair is preferred.",
+"cmp_note_big5":"Could not read the Big5 list (big5.txt), so the 〓 scheme is not computed.",
+"cmp_note_inferred":"{n} records do not state their button set; it was inferred from the time (before 4 November 2026: no buttons).",
+"cmp_note_trans":"{n} lines were transcribed in review mode on lines with no candidate text; the collator never saw an existing transcription, so they count as independent transcription.",
+"cmp_fig_note":"Figure labels: {n} lines, paired label by label, with character order counted within each label. {r} of them are the exact reverse of the other's. Ignoring reading direction (post hoc: each line takes the closer of forward and reversed), unfolded character agreement is {p}.",
+"cls_variant":"Variant only",
+"cls_geta":"〓 aligned",
+"cls_real":"Substantive",
+"cmp_dis_head":"{n} lines still differ under '{s}':",
+"cmp_th_class":"Class",
+"inferred":"inferred",
+"src_blind":"blind",
+"src_trans":"review transcription (no candidate text)",
+"src_review":"review",
 "lang_modal_title":"Language · 語言 · 语言",
 "region_Main":"Main text","region_Interlinear":"Interlinear","region_Figure":"Figure","region_Title":"Title","region_Page":"Page",
 "line_Main":"Main line","line_Interlinear":"Interlinear line","line_figureLabel":"Figure label","line_figureTitle":"Title line",
@@ -828,7 +1115,7 @@ const I18N = {
 "line_word":"Line ","region_word":"　region ","no_region_warn":"　⚠ this line belongs to no region",
 "hint_notonto_pre":"Type string is not in the ontology: ","hint_notonto_suf":". Please tell the project coordinator.","empty_paren":"(empty)",
 "hint_has_illegible":"　This line contains □: a character here is illegible. If you can read it, replace □ with the character; otherwise keep □.",
-"hint_has_geta":"　This line contains 〓: a known character for which no usable character could be found, recorded separately. Keep 〓 as is; do not replace it with a similar-looking character.",
+"hint_has_geta":"　This line contains 〓: a character that could not be identified, or that Unicode does not have, recorded separately. Keep 〓 as is; do not replace it with a similar-looking character.",
 "blind_chip":"Blind","blind_toggle":"Blind mode for this page",
 "blind_toggle_has_review":"This page already has review verdicts, so it cannot switch to Blind mode.",
 "blind_toggle_off_confirm":"Blind transcription of this page is not finished. Turning it off may show the existing transcription right away. Turn it off?","blind_banner":"Blind mode: the existing transcription is hidden; type what the image shows.",
@@ -838,8 +1125,8 @@ const I18N = {
 "cmp_no_blind":"No blind lines to compare yet: load the independent transcriber's progress JSON as A, and choose the same working folder under Pages.",
 "ins_box":"Insert □","ins_geta":"Insert 〓",
 "v_mark":"Mark characters…","mark_prompt":"Mark characters as 'Form uncertain' or 'Miscarved'; you can also correct the text here. If the text is unchanged, the line is saved as Match.","mark_save":"Save",
-"help_h_rule":"Entering characters","help_rule1":"<b>Follow the form in the book</b>: if the form printed in the book is a character of its own, enter it as printed and do not change it to the standard form, even if it looks like a simplified character. For example, if the book has <g>爲</g>, enter <g>爲</g>, not <g>為</g>; for <g>靑</g> enter <g>靑</g>; for <g>矶</g> enter <g>矶</g>.","help_rule2":"<b>Where to look</b>: first look in the row of 'Hard-to-type characters' buttons below the text box, where characters such as <g>卽</g>, <g>屛</g>, <g>塡</g>, <g>倂</g> and <g>吿</g> can be inserted with one click. If it is not there, try your input method, including handwriting input (on a Mac, for example, trackpad handwriting).",
-"help_rule3":"<b>If you cannot find it</b>: if the form differs from the standard character only in its strokes (a missing stroke, a longer or shorter stroke), enter the standard character. If a component differs (for example <g>精</g> written with <g>靑</g> on the right), enter 〓 and describe the form in the note, e.g. \"米 left, <g>靑</g> right\".","help_rule4":"<b>Form uncertain</b>: when you cannot determine the form and the context decides it (for example whether <g>己</g>, <g>已</g> or <g>巳</g> is closed, or how wide <g>日</g> or <g>曰</g> is), enter it as you judge it, then put the cursor just after the character (or select it) and click 'Form uncertain'.","help_rule5":"<b>Miscarved</b>: the form is clear, but you think the carver made a mistake and a similar-looking character fits the sense (for example <g>裨</g> carved as <g>禆</g>). Still enter what the book shows, then put the cursor just after the character, click 'Miscarved…' and type the character the sense calls for. Loan characters, ancient and modern forms, and variant forms are not carving mistakes; do not mark them.",
+"help_h_rule":"Entering characters","help_rule1":"<b>Follow the form in the book</b>: if a character in the book has a matching character with the same form (ignore stroke weight and carving style), enter it as printed, e.g. <g>爲</g>, <g>靑</g>, <g>卽</g>; do not change it to the standard form. This holds even if it looks like a simplified character, e.g. <g>矶</g>.","help_rule2":"<b>Where to look</b>: first look in the row of 'Hard-to-type characters' buttons below the text box, where characters such as <g>卽</g>, <g>屛</g>, <g>塡</g>, <g>倂</g> and <g>吿</g> can be inserted with one click. If it is not there, try your input method, including handwriting input (on a Mac, for example, trackpad handwriting).",
+"help_rule3":"<b>If you cannot find it</b>: if no character has the same form but you know which character it is, enter the standard character, e.g. <g>領</g>, <g>直</g> (see the images). Enter 〓 only if you cannot tell which character it is, or if you can see its components but it is not another form of any character and Unicode does not have it; in the note, give the components and their positions, e.g. 'left ○, right ○', with each ○ replaced by a component you can make out. A character made illegible by wear, worm damage or loss is entered as □ (see 'Special symbols').<span class=\"helpFig\"><span><img src=\"img/help_ling.png\" alt=\"Page image: 領\"><g>領</g></span><span><img src=\"img/help_zhi.png\" alt=\"Page image: 直\"><g>直</g></span></span>","help_rule4":"<b>Form uncertain</b>: when you cannot determine the form and the context decides it (for example whether <g>己</g>, <g>已</g> or <g>巳</g> is closed, or how wide <g>日</g> or <g>曰</g> is), enter it as you judge it, then put the cursor just after the character (or select it) and click 'Form uncertain'.","help_rule5":"<b>Miscarved</b>: the form is clear, but you think the carver made a mistake and a similar-looking character fits the sense (for example <g>裨</g> carved as <g>禆</g>). Still enter what the book shows, then put the cursor just after the character, click 'Miscarved…' and type the character the sense calls for. Loan characters, ancient and modern forms, and variant forms are not carving mistakes; do not mark them.",
 "old_forms_label":"Hard-to-type characters","old_form_title":"Insert {c} ({u})","mark_unclear_btn":"Form uncertain",
 "mark_reading_btn":"Miscarved…","mark_reading_ph":"Intended character","mark_ok":"OK",
 "mark_unclear_chip":"Uncertain: character {n}, ","mark_reading_chip":"Miscarved: character {n}, ","mark_reading_as":" read as ",
@@ -882,6 +1169,9 @@ const I18N = {
 }
 }
 ;
+/* 版本：tools/build_sw.py 每次建置時把 build id 寫在這裡（與 sw.js 的快取名相同），每條紀錄與進度 JSON 都記下它（第 12b 輪 T6） */
+const BUILD_ID = "f58ed92ca31c";
+const APP_VERSION = "0.7";
 const LANG_KEY = "jiaoshutai_lang";
 let LANG = "zh-Hant";
 function t(key){
@@ -905,12 +1195,14 @@ function applyLang(lang){
   document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.getAttribute("data-i18n")));
   document.querySelectorAll("[data-i18n-html]").forEach(el => el.innerHTML = t(el.getAttribute("data-i18n-html")));
   // 說明裡的字形示例寫成 <g>…</g>，以宋體（閱讀字型）顯示，見 CSS .help g
-  document.querySelectorAll(".oldForms [data-u]").forEach(b => b.title = fmt(t("old_form_title"), {c:b.textContent, u:b.dataset.u}));
+  document.querySelectorAll(".oldForms [data-u]").forEach(b => { const d = btnDesc(b.textContent);
+    b.title = d ? fmt(t("old_form_title_desc"), {c:b.textContent, u:b.dataset.u, d:d}) : fmt(t("old_form_title"), {c:b.textContent, u:b.dataset.u}); });
   document.querySelectorAll(".editTools").forEach(h => { const w = h.closest("#fixWrap, #transWrap"); if (w) renderMarks(w); });
   if ($("fixWrap").dataset.kind) setFixLabels();
   document.querySelectorAll("[data-i18n-ph]").forEach(el => el.setAttribute("placeholder", t(el.getAttribute("data-i18n-ph"))));
   document.querySelectorAll("[data-i18n-alt]").forEach(el => el.setAttribute("alt", t(el.getAttribute("data-i18n-alt"))));
   document.querySelectorAll(".langOpt").forEach(b => b.classList.toggle("cur", b.dataset.lang === lang));
+  if (typeof renderBlindBar === "function" && state.reg) renderBlindBar();
   const c = $("colText");
   if (c) $("flip").textContent = c.classList.contains("horiz") ? t("flip_to_vert") : t("flip_to_horiz");
   if (typeof renderPageList === "function") renderPageList();
@@ -998,8 +1290,7 @@ const state = {
   zoom: 1,
   progress: {},     // {pageName: {edits:{lineId:{...}}, idx:int}}
   auditRows: [],
-  blind: new Set(), // blind_pages.txt 指定、且在資料夾中找到的頁名
-  blindUnmatched: []
+  blind: new Set()  // 盲轉寫清單上、已配上檔案、未撤回的頁名（由 syncBlind 依 state.reg 重算）
 };
 
 const $ = id => document.getElementById(id);
@@ -1038,6 +1329,10 @@ function loadLocal(){
 loadLocal();
 /* 刪除前先把全部進度導出成備份 JSON（格式與「導出進度 JSON」相同，可直接「載入進度 JSON」還原）。
    以進度本身為準，不依頁面清單，清單是空的也不會漏掉。 */
+/* 進度檔的版本資訊與盲轉寫清單（第 12b 輪 T6、T14；只加欄位，舊版讀得了） */
+function fileMeta(){
+  return {build:BUILD_ID, btn_set:BTN_SET_ID, btn_chars:OLD_FORMS, blind:{list:state.reg.list, events:state.reg.events}};
+}
 function backupProgress(){
   const pages = {};
   for (const k in state.progress){
@@ -1052,7 +1347,7 @@ function backupProgress(){
   const d = new Date(), pad = x => String(x).padStart(2, "0");
   const stamp = d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + "-" + pad(d.getHours()) + pad(d.getMinutes());
   dl("校書臺_進度備份_" + ($("who").value.trim() || "未署名") + "_" + stamp + ".json",
-     JSON.stringify({version:"0.6", annotator: $("who").value.trim(), ts: d.toISOString(), pages: pages}, null, 1), "application/json");
+     JSON.stringify(Object.assign({version:APP_VERSION, annotator: $("who").value.trim(), ts: d.toISOString()}, fileMeta(), {pages: pages}), null, 1), "application/json");
 }
 $("clearProg").onclick = () => {
   let n = 0;
@@ -1063,7 +1358,7 @@ $("clearProg").onclick = () => {
   state.progress = {};
   // 清空時若有頁面開著，替它補回空進度，否則之後的判定會因找不到 edits 而失效
   if (state.pi >= 0) state.progress[curPage().name] = {edits:{}, idx:state.idx};
-  renderPageList(); if (state.pi >= 0) show();
+  syncBlind(); renderPageList(); if (state.pi >= 0) show();
 };
 
 /* ============ XML 解析 ============ */
@@ -1116,12 +1411,16 @@ function parsePAGE(doc){
   }
   const regById = {}; regions.forEach(r => regById[r.id] = r);
   const lnEls = doc.getElementsByTagNameNS("*","TextLine");
+  const skipped = []; // 沒有可用多邊形的列：無法裁切，不顯示；記下來給資料自檢與進度提示（第 12b 輪 T2）
   for (let i=0;i<lnEls.length;i++){
     const tl = lnEls[i];
     const co = directChild(tl, "Coords");
-    if (!co || !co.getAttribute("points")) continue;
+    const lid = tl.getAttribute("id") || ("l"+(i+1));
+    if (!co || !co.getAttribute("points")){ skipped.push({id:lid, why:"nocoords"}); continue; }
     const pts = ptsFromString(co.getAttribute("points"));
-    if (pts.length < 3) continue;
+    if (pts.length < 3){ skipped.push({id:lid, why:"fewpts", n:pts.length}); continue; }
+    const blEl = directChild(tl, "Baseline");
+    const base = blEl && blEl.getAttribute("points") ? ptsFromString(blEl.getAttribute("points")) : [];
     let text = "";
     const te = directChild(tl, "TextEquiv");
     if (te){ const u = directChild(te, "Unicode"); if (u) text = u.textContent || ""; }
@@ -1131,15 +1430,15 @@ function parsePAGE(doc){
     const raw = customType(tl);
     const lo = customOrder(tl);
     lines.push({
-      id: tl.getAttribute("id") || ("l"+(i+1)),
-      pts: pts, ...bboxOf(pts),
+      id: lid,
+      pts: pts, ...bboxOf(pts), base: base.length >= 2 ? base : null,
       text: text.trim(),
       regionId: rid, regionRaw: reg ? reg.raw : "", regionType: reg ? reg.type : "",
       lineRaw: raw, lineType: NORM_LINE[raw] !== undefined ? NORM_LINE[raw] : (raw || "Main"),
       rOrd: reg ? reg.ord : 9999, lOrd: (lo !== null ? lo : i), seq: i
     });
   }
-  return {lines:lines, regions:regions, imageFilename:imageFilename, natW:natW, natH:natH, format:"PAGE"};
+  return {lines:lines, regions:regions, imageFilename:imageFilename, natW:natW, natH:natH, format:"PAGE", skipped:skipped};
 }
 function parseALTO(doc){
   const tagMap = {};
@@ -1256,8 +1555,10 @@ async function restorePages(){
   if (!pages.length && !m.missing) return;
   pages.sort((a,b) => coll.compare(a.name, b.name));
   state.pages = pages;
-  state.blind = new Set((m.blind || []).filter(n => pages.some(p => p.name === n)));
-  for (const p of pages) if (state.blind.has(p.name)){ try{ await ensureParsed(p); }catch(err){} }
+  regAdd(m.blind || [], "pages.json"); // 舊版只把盲轉寫頁記在 pages.json：補登記進清單
+  syncBlind();
+  for (const p of pages) if (state.blind.has(p.name)){ try{ await ensureParsed(p); }catch(err){ p.parseFailed = true; } }
+  syncBlind();
   const note = $("pairNote");
   note.className = m.missing ? "banner warn" : "banner ok";
   note.textContent = fmt(t("restored_note"), {n:pages.length}) + (m.missing ? sentenceGap() + fmt(t("restored_missing"), {n:m.missing}) : "");
@@ -1400,8 +1701,11 @@ async function finishRestoreFSA(){
   const curP = curPage();
   state.pages = state.pages.concat(pages).sort((a,b) => coll.compare(a.name, b.name));
   if (curP) state.pi = state.pages.indexOf(curP);
-  for (const n of (m.blind || [])) if (pages.some(p => p.name === n)) state.blind.add(n);
-  for (const p of pages) if (state.blind.has(p.name)){ try{ await ensureParsed(p); }catch(err){} }
+  regAdd(m.blind || [], "restored_list"); // 舊版只把盲轉寫頁記在 IndexedDB 的清單裡：補登記
+  syncBlind();
+  // 全部解析：進度提示要知道各頁列數；盲轉寫頁也才能判斷是否完成
+  for (const p of pages){ try{ await ensureParsed(p); }catch(err){ p.parseFailed = true; } }
+  syncBlind();
   const note = $("pairNote");
   note.className = missing ? "banner warn" : "banner ok";
   note.textContent = fmt(t("restored_note"), {n:pages.length}) + (missing ? sentenceGap() + fmt(t("restored_missing"), {n:missing}) : "");
@@ -1411,6 +1715,7 @@ async function finishRestoreFSA(){
     const i = state.pages.findIndex(p => p.name === m.current);
     if (i >= 0) await openPage(i); else goTab("P");
   }
+  if (pages.length) showProgress();
 }
 const sentenceGap = () => LANG === "en" ? " " : ""; // 中文句號後不空格
 function closeWork(){
@@ -1419,42 +1724,57 @@ function closeWork(){
   $("workArea").classList.add("hidden"); $("emptyHint").classList.remove("hidden");
 }
 $("clearPages").onclick = () => {
-  state.pages = []; state.blind = new Set(); state.blindUnmatched = [];
-  pending = {imgs:[], xmls:[], blind:null};
+  state.pages = []; // 盲轉寫清單登記在本機，不隨頁面清單清空
+  pending = {imgs:[], xmls:[]};
   pendingRestore = null; $("reopenBar").className = "banner ok hidden";
   closeWork();
   $("pairNote").className = "banner ok hidden";
-  renderPageList();
+  syncBlind(); renderPageList();
   rememberPages();
 };
 
 /* ============ 資料夾配對 ============ */
-const BLIND_FILE = "blind_pages.txt";
+/* 盲轉寫清單：檔名以 blind_pages 開頭的 .txt（blind_pages.txt、blind_pages_collator2.txt 都認，第 12b 輪 T1）。
+   撤回清單：檔名以 blind_release 開頭的 .txt，由負責人寄給校者，列出不再要求盲轉寫的頁（T14）。 */
+const BLIND_LIST_RE = /^blind_pages.*\.txt$/i, BLIND_RELEASE_RE = /^blind_release.*\.txt$/i;
 function collect(fileList){
-  const imgs = [], xmls = []; let blind = null;
+  const imgs = [], xmls = [], lists = [], releases = [], otherTxt = [];
   for (const f of fileList){
     if (IMG_EXT.test(f.name)) imgs.push(f);
     else if (XML_EXT.test(f.name)) xmls.push(f);
-    else if (f.name.toLowerCase() === BLIND_FILE) blind = f;
+    else if (BLIND_LIST_RE.test(f.name)) lists.push(f);
+    else if (BLIND_RELEASE_RE.test(f.name)) releases.push(f);
+    else if (/\.txt$/i.test(f.name)) otherTxt.push(f.name);
   }
-  return {imgs:imgs, xmls:xmls, blind:blind};
+  return {imgs:imgs, xmls:xmls, lists:lists, releases:releases, otherTxt:otherTxt};
 }
 /* 還沒配上的圖片與 XML 都留在 pending，之後選的資料夾一起配對，所以先選幾個 XML 資料夾、再選圖片資料夾也可以。
-   blind 是 blind_pages.txt，或其中對應頁還在等配對的頁名。 */
-let pending = {imgs:[], xmls:[], blind:null};
+   盲轉寫清單一讀到就登記（見下方「盲轉寫」），不必等它的頁配上。 */
+let pending = {imgs:[], xmls:[]};
+/* 本次選資料夾的提醒，顯示在進度提示裡：認不出的 .txt（T1）、沒有框的列（T2）、帶有錄文的盲轉寫 XML（T3） */
+let loadNotes = null;
 // 同名檔案以新選的為準
 function addWaiting(list, files){
   const names = new Set(files.map(f => f.name.toLowerCase()));
   return list.filter(f => !names.has(f.name.toLowerCase())).concat(files);
 }
+async function readNames(f){
+  let txt = "";
+  try{ txt = await f.text(); }catch(err){ return []; }
+  return txt.replace(/^﻿/, "").split(/\r?\n/).map(n => n.trim()).filter(n => n && n[0] !== "#");
+}
 async function bindFolders(fileList, mode){
   const got = collect(fileList);
+  loadNotes = {otherTxt:got.otherTxt, noCoords:[], hasText:[]};
+  for (const f of got.lists) regAdd(await readNames(f), f.name);
+  for (const f of got.releases) regRelease(await readNames(f), f.name);
   if (mode !== "xml") pending.imgs = addWaiting(pending.imgs, got.imgs);
   if (mode !== "img") pending.xmls = addWaiting(pending.xmls, got.xmls);
-  if (got.blind) pending.blind = got.blind;
   if (!pending.imgs.length || !pending.xmls.length){
     $("pairNote").className = "banner warn";
     $("pairNote").textContent = fmt(t("got_msg"), {i:pending.imgs.length, x:pending.xmls.length});
+    syncBlind(); renderPageList(); if (state.pi >= 0) show();
+    if (got.lists.length || got.releases.length || got.otherTxt.length) showProgress();
     return;
   }
   await pairAndBuild();
@@ -1507,7 +1827,19 @@ async function pairAndBuild(){
   const paired = new Set(pages.map(p => p.imgFile));
   pending.imgs = pending.imgs.filter(f => !paired.has(f));
   pending.xmls = pending.xmls.filter(f => !used.has(baseName(f.name).toLowerCase()));
-  await loadBlindList(pages);
+  // 新配上的頁都先解析：沒有框的列（T2）、盲轉寫頁的 XML 是否帶有錄文（T3）；也才知道各頁列數、能判斷是否完成。
+  // 錄文本身不進 DOM，只記下「有沒有」
+  syncBlind();
+  for (const p of pages){
+    try{ await ensureParsed(p); }catch(err){ p.parseFailed = true; continue; }
+    const sk = p.parsed.skipped || [];
+    if (sk.length && loadNotes) loadNotes.noCoords.push({page:p.name, n:sk.length});
+    if (isRegBlind(p) && p.parsed.lines.some(L => L.text)){
+      if (loadNotes) loadNotes.hasText.push(p.name);
+      logEvent("xml_has_text", {page:p.name, xml:p.xmlName});
+    }
+  }
+  syncBlind();
   const orphanXml = pending.xmls.map(f => f.name);
   const note = $("pairNote");
   note.classList.remove("hidden");
@@ -1522,48 +1854,76 @@ async function pairAndBuild(){
     note.textContent = fmt(t("pair_ok"), {n:pages.length});
   }
   if (state.pages.length > pages.length) note.innerHTML += sentenceGap() + fmt(t("pair_total"), {n:state.pages.length});
-  const bu = state.blindUnmatched;
-  if (bu.length){
-    note.className = "banner warn";
-    note.innerHTML += "<br>" + fmt(t("blind_unmatched"), {n:bu.length, list:bu.slice(0,8).join(t("sep")), more:(bu.length>8?t("ellipsis"):"")});
-  }
   renderPageList();
   rememberPages();
   goTab("P");
+  showProgress();
 }
 $("dirBoth").onchange = e => bindFolders(e.target.files, "both");
 $("dirImg").onchange  = e => bindFolders(e.target.files, "img");
 $("dirXml").onchange  = e => bindFolders(e.target.files, "xml");
 $("filesAny").onchange = e => bindFolders(e.target.files, "both");
 
-/* ============ 盲轉寫（IAA，字符規範 §8） ============ */
-/* 工作資料夾裡的 blind_pages.txt（每行一個頁名）指定盲轉寫頁。這些頁全部完成之前：
-   盲轉寫頁只給空白錄文框，其他頁鎖定；任何分頁都不把既有轉寫寫進 DOM。
-   「完成」指該頁每一列都有盲轉寫紀錄（mode 為 blind，或覆核後保留在 blind 欄位）。 */
-async function loadBlindList(pages){
-  const fresh = new Set(pages.map(p => p.name));
-  state.blind = new Set(Array.from(state.blind).filter(n => !fresh.has(n) && state.pages.some(p => p.name === n)));
-  state.blindUnmatched = [];
-  if (!pending.blind) return;
-  let names = pending.blind;
-  if (!Array.isArray(names)){
-    let txt = "";
-    try{ txt = await names.text(); }catch(err){ pending.blind = null; return; }
-    names = txt.replace(/^\uFEFF/, "").split(/\r?\n/).map(n => n.trim()).filter(n => n && n[0] !== "#");
-  }
-  const byName = {};
-  pages.forEach(p => { byName[p.name.toLowerCase()] = p; byName[baseName(p.xmlName).toLowerCase()] = p; });
-  const waiting = new Set(pending.imgs.concat(pending.xmls).map(f => baseName(f.name).toLowerCase()));
-  const later = [];
+/* ============ 盲轉寫（IAA，字符規範 §8；第 12b 輪 T14） ============ */
+/* 盲轉寫清單登記在本機（localStorage 的 jiaoshutai_blind），不跟著所選的資料夾變：重新選資料夾、清空頁面清單、
+   刪除校對進度都不會解除。清單上的頁全部完成，或被撤回之前：清單上的頁只給空白錄文框，其他頁鎖定，
+   兩人對照不顯示；任何分頁都不把既有轉寫寫進 DOM。
+   「完成」指該頁每一列都有盲轉寫紀錄（mode 為 blind，或覆核後保留在 blind 欄位）。已配上的頁當場判斷；
+   還沒配上檔案的頁，以先前看到它完成時記下的 done 為準，從未完成就一直算未完成。
+   撤回：負責人寄來的 blind_release*.txt，或桌面版的「本頁盲轉寫」開關。撤回之後再讀到同一份清單，不會重新列入。
+   登記、完成、撤回、上鎖與解鎖都記入 events，隨進度 JSON 導出。 */
+const REG_KEY = "jiaoshutai_blind";
+state.reg = {list:{}, events:[], locked:false};
+try{ const d = JSON.parse(localStorage.getItem(REG_KEY)); if (d && d.list) state.reg = Object.assign({list:{}, events:[], locked:false}, d); }catch(err){}
+function saveReg(){ try{ localStorage.setItem(REG_KEY, JSON.stringify(state.reg)); }catch(err){} }
+function logEvent(type, o){
+  state.reg.events.push(Object.assign({ts:new Date().toISOString(), type:type, build:BUILD_ID}, o || {}));
+  saveReg();
+}
+const regKey = n => baseName(String(n || "").trim()).toLowerCase();
+function regEntry(p){ return state.reg.list[regKey(p.name)] || (p.xmlName ? state.reg.list[regKey(p.xmlName)] : null) || null; }
+function isRegBlind(p){ const r = regEntry(p); return !!r && !r.released; }
+/* 登記：清單上的新頁加入；已登記（含已撤回）的頁不動 */
+function regAdd(names, src){
+  const added = [];
   for (const n of names){
-    const p = byName[n.toLowerCase()] || byName[baseName(n).toLowerCase()];
-    if (p) state.blind.add(p.name);
-    else if (waiting.has(n.toLowerCase()) || waiting.has(baseName(n).toLowerCase())) later.push(n); // \u5C0D\u61C9\u7684\u9801\u9084\u5728\u7B49\u914D\u5C0D
-    else state.blindUnmatched.push(n);
+    const k = regKey(n); if (!k || state.reg.list[k]) continue;
+    state.reg.list[k] = {name:n, src:src, added:new Date().toISOString()};
+    added.push(n);
   }
-  pending.blind = later.length ? later : null;
-  // 先解析盲轉寫頁，才知道各頁列數、能判斷是否完成
-  for (const p of pages) if (state.blind.has(p.name)){ try{ await ensureParsed(p); }catch(err){} }
+  if (added.length) logEvent("list_loaded", {file:src, pages:added});
+  else saveReg();
+  return added;
+}
+function regRelease(names, src){
+  const done = [], unknown = [];
+  for (const n of names){
+    const r = state.reg.list[regKey(n)];
+    if (!r){ unknown.push(n); continue; }
+    if (r.released) continue;
+    r.released = new Date().toISOString(); r.releaseSrc = src; done.push(r.name);
+  }
+  if (done.length || unknown.length) logEvent("released", {file:src, pages:done, unknown:unknown});
+  return done;
+}
+function pageByKey(){
+  const m = new Map();
+  for (const p of state.pages){ m.set(regKey(p.name), p); if (p.xmlName && !m.has(regKey(p.xmlName))) m.set(regKey(p.xmlName), p); }
+  return m;
+}
+/* 清單現況：total 未撤回的頁數，done 已完成，pending 未完成（頁名），unmatched 其中還沒配上檔案的 */
+function blindStatus(){
+  const m = pageByKey(), out = {total:0, done:0, pending:[], unmatched:[], released:0};
+  for (const k in state.reg.list){
+    const r = state.reg.list[k];
+    if (r.released){ out.released++; continue; }
+    out.total++;
+    const p = m.get(k);
+    const fin = (p && (p.parsed || p.parseFailed)) ? blindPageFinished(p) : !!r.done;
+    if (fin) out.done++;
+    else { out.pending.push(r.name); if (!p) out.unmatched.push(r.name); }
+  }
+  return out;
 }
 function blindDone(e){ return !!e && (e.mode === "blind" || !!e.blind); }
 function blindPageFinished(p){
@@ -1571,27 +1931,141 @@ function blindPageFinished(p){
   const ed = (state.progress[p.name] || {}).edits || {};
   return p.parsed.lines.every(L => blindDone(ed[L.id]));
 }
-function blindRemaining(){ return state.pages.filter(p => state.blind.has(p.name) && !blindPageFinished(p)).length; }
-function blindLocked(){ return state.blind.size > 0 && blindRemaining() > 0; }
+function blindRemaining(){ return blindStatus().pending.length; }
+function blindLocked(){ return blindRemaining() > 0; }
+/* 依清單重算 state.blind（已配上、未撤回的清單頁），記下完成時間，上鎖或解鎖時記事件；最後重畫狀態列 */
+function syncBlind(){
+  const m = pageByKey(); let changed = false;
+  state.blind = new Set(state.pages.filter(isRegBlind).map(p => p.name));
+  for (const k in state.reg.list){
+    const r = state.reg.list[k]; if (r.released) continue;
+    const p = m.get(k); if (!p || !p.parsed) continue;
+    const fin = blindPageFinished(p);
+    if (fin && !r.done){ r.done = new Date().toISOString(); changed = true; logEvent("page_done", {page:r.name}); }
+    else if (!fin && r.done){ delete r.done; changed = true; }
+  }
+  const locked = blindLocked();
+  if (locked !== !!state.reg.locked){
+    state.reg.locked = locked; changed = true;
+    logEvent(locked ? "lock_on" : "lock_lifted", {pending:blindRemaining()});
+  }
+  if (changed) saveReg();
+  renderBlindBar();
+}
 /* 頁面當前模式："review" 一般覆核；"blind" 盲轉寫；"locked" 盲轉寫未完成時的其他頁 */
 function pageMode(p){
   if (!p || !blindLocked()) return "review";
   return state.blind.has(p.name) ? "blind" : "locked";
 }
-/* 桌面版開關：把當前頁加入或移出盲轉寫頁。已有覆核紀錄的頁不能改成盲轉寫（盲轉寫紀錄會蓋掉覆核紀錄，且既有轉寫已經看過）；
-   盲轉寫未完成就關閉，先確認，因為既有轉寫可能隨即顯示。清單存進 pages.json，下次打開仍在。 */
+/* 桌面版開關：把當前頁加入或移出盲轉寫清單。已有覆核紀錄的頁不能改成盲轉寫（盲轉寫紀錄會蓋掉覆核紀錄，且既有轉寫已經看過）；
+   盲轉寫未完成就關閉，先確認，因為既有轉寫可能隨即顯示。關閉記為撤回。 */
 function toggleBlind(){
   const p = curPage(); if (!p) return;
-  if (state.blind.has(p.name)){
+  const r = regEntry(p);
+  if (r && !r.released){
     if (!blindPageFinished(p) && !confirm(t("blind_toggle_off_confirm"))) return;
-    state.blind.delete(p.name);
+    regRelease([r.name], "desktop");
   } else {
     const ed = (state.progress[p.name] || {}).edits || {};
     if (Object.values(ed).some(e => e.mode !== "blind")){ alert(t("blind_toggle_has_review")); return; }
-    state.blind.add(p.name);
+    if (r){ delete r.released; delete r.releaseSrc; logEvent("list_loaded", {file:"desktop", pages:[r.name]}); }
+    else regAdd([p.name], "desktop");
   }
-  show(); renderPageList(); rememberPages();
+  syncBlind(); show(); renderPageList(); rememberPages();
 }
+/* 桌面版：一次撤回清單上所有未完成的頁（負責人在自己電腦上打開帶有 blind_pages.txt 的批次資料夾時用） */
+function releaseAll(){
+  const st = blindStatus(); if (!st.pending.length) return;
+  if (!confirm(fmt(t("prog_release_confirm"), {n:st.pending.length}))) return;
+  regRelease(st.pending, "desktop");
+  syncBlind(); renderPageList(); if (state.pi >= 0) show(); rememberPages(); closeProgress();
+}
+
+/* ===== 盲轉寫狀態列（逐列校對與頁面清單頂端；樣式同頁面列） ===== */
+function renderBlindBar(){
+  const bars = [$("blindBar"), $("blindBarP")];
+  const st = blindStatus();
+  if (!st.pending.length){ bars.forEach(b => b.classList.add("hidden")); return; }
+  const mode = pageMode(curPage());
+  const pct = st.total ? Math.round(st.done / st.total * 100) : 0;
+  const canGo = st.pending.length > st.unmatched.length;
+  const head = '<span class="tagBlind">' + t("blind_chip") + '</span>' +
+    '<span class="count">' + fmt(t("bb_count"), {d:st.done, n:st.total}) + '</span>' +
+    '<span class="meter" aria-hidden="true"><i style="width:' + pct + '%"></i></span>' +
+    (st.unmatched.length ? '<span class="warnTxt">' + fmt(t("bb_unmatched"), {n:st.unmatched.length}) + '</span>' : '');
+  const tail = '<span class="push">' + (canGo ? '<button class="btn small" data-bb="next">' + t("bb_next") + '</button>' : '') +
+    '<button class="btn small" data-bb="info">' + t("bb_info") + '</button></span>';
+  const subA = mode === "blind" ? t("blind_banner") : (mode === "locked" ? t("bb_sub_locked") : "");
+  $("blindBar").innerHTML = head + (subA ? '<span class="sub">' + subA + '</span>' : '') + tail;
+  $("blindBarP").innerHTML = head + '<span class="sub">' + t("bb_sub_list") + '</span>' + tail;
+  bars.forEach(b => {
+    b.classList.remove("hidden");
+    b.querySelectorAll("[data-bb]").forEach(x => x.onclick = () => { if (x.dataset.bb === "next") nextUndone(); else showProgress(); });
+  });
+}
+
+/* ===== 進度提示：選資料夾或重新載入之後出現，告訴校者還有多少要做，按一下就進入下一張 ===== */
+let progAct = "close";
+function progModalOpen(){ return $("progModal").classList.contains("show"); }
+function closeProgress(){ $("progModal").classList.remove("show"); $("scroller").focus({preventScroll:true}); }
+function showProgress(){
+  if (langModalOpen()) return;
+  const st = blindStatus(), items = [];
+  const names = list => '<span class="names">' + escHtml(list.slice(0, 6).join(t("sep"))) + (list.length > 6 ? t("ellipsis") : "") + '</span>';
+  let sub, go;
+  if (st.pending.length){
+    sub = t("prog_sub_blind");
+    items.push(["", fmt(t("prog_blind_left"), {n:st.pending.length, d:st.done})]);
+    if (st.unmatched.length) items.push(["warn", fmt(t("prog_unmatched"), {n:st.unmatched.length}) + names(st.unmatched)]);
+    items.push(["", t("prog_locked_note")]);
+    const canGo = st.pending.length > st.unmatched.length;
+    go = canGo ? t("prog_go_blind") : t("prog_go_list"); progAct = canGo ? "next" : "list";
+  } else {
+    sub = t("prog_sub_review");
+    let pages = 0, done = 0, lines = 0, unread = 0;
+    for (const p of state.pages){
+      const s = pageStat(p); pages++;
+      if (s.total === null){ unread++; continue; }
+      if (s.total > 0 && s.done >= s.total) done++; else lines += Math.max(0, s.total - s.done);
+    }
+    items.push(["", fmt(t("prog_pages"), {n:pages, d:done})]);
+    if (pages > done) items.push(["", fmt(t("prog_lines"), {n:lines}) + (unread ? fmt(t("prog_unread"), {n:unread}) : "")]);
+    if (st.total) items.push(["", t("prog_blind_all_done")]);
+    const left = pages > done;
+    go = left ? t("prog_go_review") : t("prog_go_done"); progAct = left ? "next" : "close";
+  }
+  const n = loadNotes; loadNotes = null;
+  if (n){
+    if (n.hasText.length) items.push(["warn", fmt(t("prog_has_text"), {n:n.hasText.length}) + names(n.hasText)]);
+    const nc = n.noCoords.reduce((a, x) => a + x.n, 0);
+    if (nc) items.push(["warn", fmt(t("prog_no_coords"), {n:nc, p:n.noCoords.length}) + names(n.noCoords.map(x => x.page))]);
+    if (n.otherTxt.length) items.push(["warn", fmt(t("prog_other_txt"), {n:n.otherTxt.length}) + names(n.otherTxt)]);
+  }
+  $("progSub").textContent = sub;
+  $("progList").innerHTML = items.map(x => '<li' + (x[0] ? ' class="' + x[0] + '"' : '') + '>' + x[1] + '</li>').join("");
+  $("progGo").textContent = go;
+  $("progRelease").classList.toggle("hidden", !(desktop && st.pending.length));
+  $("progModal").classList.add("show");
+  $("progGo").focus();
+}
+$("progGo").onclick = () => {
+  const act = progAct; closeProgress();
+  if (act === "list") goTab("P");
+  else if (act === "next"){
+    const p = curPage(), s = p ? pageStat(p) : null;
+    if (p && pageMode(p) !== "locked" && s.total !== null && s.done < s.total) goTab("A"); // 正在做的那一頁還沒完成：回到它
+    else nextUndone();
+  }
+};
+$("progLater").onclick = closeProgress;
+$("progRelease").onclick = releaseAll;
+$("progModal").addEventListener("click", e => { if (e.target === $("progModal")) closeProgress(); });
+// 提示開著時，鍵盤不傳到後面的頁面（Enter 只按下提示裡有焦點的按鈕，不會誤記「一致」）
+window.addEventListener("keydown", e => {
+  if (!progModalOpen()) return;
+  if (e.key === "Escape"){ e.preventDefault(); closeProgress(); }
+  e.stopPropagation();
+}, true);
 
 /* ============ 頁面清單 ============ */
 function pageStat(p){
@@ -1613,7 +2087,9 @@ function renderPageList(){
     let cls = "", pill = '<span class="pill">'+t("pill_notstart")+'</span>';
     if (s.total !== null && s.done >= s.total && s.total > 0){ pill = '<span class="pill done">'+t("pill_done")+'</span>'; cls = "doneRow"; }
     else if (s.done > 0) pill = '<span class="pill part">'+t("pill_part")+'</span>';
-    const chip = state.blind.has(p.name) ? '<span class="pill blind">'+t("blind_chip")+'</span>' : '';
+    const re = regEntry(p);
+    const chip = state.blind.has(p.name) ? '<span class="pill blind">'+t("blind_chip")+'</span>'
+               : (re && re.released ? '<span class="pill">'+t("blind_released_chip")+'</span>' : '');
     h += '<tr class="'+cls+'"><td>'+(i+1)+'</td><td class="serif">'+p.name+chip+'</td><td style="color:var(--ink2)">'+p.xmlName+
          '</td><td>'+total+'</td><td>'+s.done+'</td><td>'+pill+
          '</td><td><button class="btn small" data-go="'+i+'">'+(s.done?t("btn_continue"):t("btn_start"))+'</button></td></tr>';
@@ -1632,6 +2108,7 @@ async function ensureParsed(p){
 }
 async function openPage(i){
   const p = state.pages[i]; if (!p) return;
+  if (progModalOpen()) closeProgress();
   try{ await ensureParsed(p); }
   catch(err){ alert(t("xml_unreadable") + p.xmlName); return; }
   if (!p.parsed.lines.length){ alert(t("no_lines")); return; }
@@ -1674,6 +2151,14 @@ function buildLocator(){
   p.parsed.lines.forEach((L,i) => {
     h += '<polygon class="lp" data-i="'+i+'" points="' + L.pts.map(q=>q[0]+","+q[1]).join(" ") + '"></polygon>';
   });
+  // 列序編號（T13）：按工具顯示的閱讀順序，從 1 起；只有編號，不含文字，盲轉寫時也可以開
+  if ($("lnoOn").checked){
+    const fs = Math.max(12, Math.round(Math.max(p.natW, p.natH) / 48));
+    p.parsed.lines.forEach((L,i) => {
+      h += '<text class="lno" x="' + Math.round(L.x + L.w/2) + '" y="' + Math.round(L.y + Math.min(L.h/2, fs)) + '" font-size="' + fs +
+           '" stroke-width="' + Math.max(2, Math.round(fs/5)) + '">' + (i+1) + '</text>';
+    });
+  }
   svg.innerHTML = h;
   svg.querySelectorAll("polygon").forEach(el => el.onclick = () => { state.idx = +el.dataset.i; show(); });
 }
@@ -1690,6 +2175,8 @@ function paintLocator(){
 /* ============ 列影像（多邊形精確裁切） ============ */
 function drawStrip(){
   const L = cur(), p = curPage(); if (!L || !p || !state.img) return;
+  const key = p.name + "\u0000" + L.id; // 換列就轉回原方向（T9）
+  if (state.rotKey !== key){ state.rotKey = key; state.rot = 0; }
   const ctxOn = $("ctxOn").checked;
   const mx = ctxOn ? Math.max(L.w * 0.9, 40) : Math.max(L.w * 0.04, 3);
   const my = ctxOn ? Math.max(L.h * 0.02, 20) : Math.max(L.h * 0.004, 3);
@@ -1701,9 +2188,8 @@ function drawStrip(){
   const sc = fit * state.zoom;
   const dispW = Math.max(24, Math.round(bw * sc)), dispH = Math.max(24, Math.round(bh * sc));
   const dpr = window.devicePixelRatio || 1;
-  const cv = $("zoomCanvas"), ctx = cv.getContext("2d");
-  cv.width = Math.round(dispW * dpr); cv.height = Math.round(dispH * dpr);
-  cv.style.width = dispW + "px"; cv.style.height = dispH + "px";
+  const off = document.createElement("canvas"), ctx = off.getContext("2d");
+  off.width = Math.round(dispW * dpr); off.height = Math.round(dispH * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, dispW, dispH);
   const path = () => {
@@ -1720,7 +2206,17 @@ function drawStrip(){
   ctx.drawImage(state.img, 0, 0, p.natW, p.natH, -bx*sc, -by*sc, p.natW*sc, p.natH*sc);
   ctx.restore();
   if (ctxOn){ ctx.save(); path(); ctx.strokeStyle = "#B3261E"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore(); }
-  return dispH;
+  // 旋轉（T9）：斜寫、倒寫的圖上標籤轉正再讀
+  const rot = ((state.rot || 0) % 360 + 360) % 360, swap = rot === 90 || rot === 270;
+  const outW = swap ? dispH : dispW, outH = swap ? dispW : dispH;
+  const cv = $("zoomCanvas"), c2 = cv.getContext("2d");
+  cv.width = Math.round(outW * dpr); cv.height = Math.round(outH * dpr);
+  cv.style.width = outW + "px"; cv.style.height = outH + "px";
+  c2.setTransform(1, 0, 0, 1, 0, 0);
+  c2.translate(cv.width / 2, cv.height / 2); c2.rotate(rot * Math.PI / 180);
+  c2.drawImage(off, -off.width / 2, -off.height / 2);
+  $("rotPill").textContent = rot + "°"; $("rotPill").classList.toggle("hidden", !rot);
+  return outH;
 }
 
 /* ============ 主畫面 ============ */
@@ -1762,6 +2258,10 @@ function show(){
   if (txt.indexOf("□") >= 0) hint += t("hint_has_illegible");
   if (txt.indexOf("〓") >= 0) hint += t("hint_has_geta");
   $("typeHint").textContent = hint;
+  // 橫寫的列（多為圖上標籤）：提示閱讀方向（T9，handoff v6 第 17、22 條；所見皆右起）
+  const horizLine = L.w > L.h * 1.25;
+  $("dirChip").textContent = horizLine ? t("dir_rtl") : "";
+  $("dirChip").classList.toggle("hidden", !horizLine);
   $("curNo").textContent = state.idx + 1; $("totNo").textContent = curLines().length;
   const done = pageStat(p).done;
   $("doneNo").textContent = fmt(t("done_count"), {n:done});
@@ -1792,9 +2292,7 @@ function show(){
   $("askLine").firstElementChild.classList.toggle("hidden", mode === "blind");
   document.querySelector(".verdicts").classList.toggle("hidden", locked);
   $("lineNote").classList.toggle("hidden", locked);
-  const bb = $("blindBanner");
-  bb.classList.toggle("hidden", mode === "review");
-  bb.textContent = mode === "blind" ? t("blind_banner") : (locked ? fmt(t("blind_locked"), {n:blindRemaining()}) : "");
+  renderBlindBar();
   $("pgName").textContent = p.name;
   const bt = $("blindToggle");
   if (bt){ const on = state.blind.has(p.name); bt.classList.toggle("on", on); bt.setAttribute("aria-pressed", on ? "true" : "false"); }
@@ -1803,6 +2301,9 @@ function show(){
   state.progress[p.name].idx = state.idx;
 }
 
+$("rotL").onclick = () => { state.rot = (state.rot || 0) - 90; show(); };
+$("rotR").onclick = () => { state.rot = (state.rot || 0) + 90; show(); };
+$("lnoOn").onchange = () => { buildLocator(); paintLocator(); };
 $("zoomRange").oninput = e => { state.zoom = e.target.value / 100; $("zoomPct").textContent = e.target.value + "%"; show(); };
 $("ctxOn").onchange = () => show();
 $("flip").onclick = () => { const c = $("colText"); c.classList.toggle("horiz");
@@ -1824,15 +2325,17 @@ function record(verdict, extra){
     original: mode === "blind" ? "" : L.text, verdict: verdict, corrected: "",
     note: $("lineNote").value.trim(), issue: $("flagText").value.trim(),
     annotator: $("who").value.trim() || "未署名", ts: new Date().toISOString(),
-    mode: mode
+    mode: mode, build: BUILD_ID, btn_set: BTN_SET_ID
   }, extra || {});
   // 盲轉寫之後再覆核，原來的盲轉寫保留在 blind 欄位，IAA 仍以它計算
   if (mode === "review" && prevE && blindDone(prevE))
     rec.blind = prevE.blind || Object.assign({verdict:prevE.verdict, corrected:prevE.corrected, note:prevE.note, annotator:prevE.annotator, ts:prevE.ts},
-                                             prevE.marks ? {marks:prevE.marks} : {});
+                                             prevE.marks ? {marks:prevE.marks} : {},
+                                             prevE.btn_set != null ? {btn_set:prevE.btn_set} : {}, prevE.build ? {build:prevE.build} : {});
   curEdits()[L.id] = rec;
   delete curDrafts()[L.id];
   saveLocal();
+  syncBlind();
   show(); renderPageList(); // 留在本列：只有「下一列」才往下走
 }
 /* 目前畫面顯示的那筆判定（盲轉寫頁只顯示盲轉寫紀錄） */
@@ -1886,7 +2389,7 @@ function nextUndone(){
     if (locked && !state.blind.has(p.name)) continue;
     if (s.total === null || s.done < s.total){ openPage(i); return; }
   }
-  alert(t("all_done"));
+  alert(locked ? t("blind_need_files") : t("all_done"));
 }
 $("vOk").onclick = () => record("正確");
 $("vBlur").onclick = () => record("不可辨");
@@ -1909,7 +2412,7 @@ function setFixLabels(){
 $("vFix").onclick = () => openFixBox("fix");
 $("vMark").onclick = () => openFixBox("mark");
 /* 存檔：文字與既有轉寫相同，記為「一致」（可帶標注）；不同，記為「修改」 */
-$("fixSave").onclick = () => { const x = takeText($("fixText"));
+$("fixSave").onclick = () => { const x = takeText($("fixText")); if (!x) return;
   if (!x.v){ alert(t("fix_empty")); return; }
   const L = cur();
   if (x.v === normText((L && L.text) || "")) record("正確", withMarks({}, x.marks));
@@ -1931,7 +2434,7 @@ $("flagSave").onclick = () => {
   e.issue = $("flagText").value.trim(); e.note = $("lineNote").value.trim();
   saveLocal(); show();
 };
-$("transSave").onclick = () => { const x = takeText($("transText"));
+$("transSave").onclick = () => { const x = takeText($("transText")); if (!x) return;
   if (!x.v){ alert(t("trans_empty")); return; }
   record("轉寫", withMarks({corrected: x.v}, x.marks)); if (x.msgs.length) alert(x.msgs.join("\n")); };
 /* 佔位符：□ 字跡不可辨，〓 字可識而打不出（字符規範 §3）。插入到游標處：
@@ -1950,9 +2453,23 @@ function insertSym(sym, box){
 }
 /* ===== 舊形按鈕、字形標注、存檔前正規化（第 12 輪） ===== */
 /* 「不易輸入的字」按鈕：等價表 v2 的 24 個舊形；加 矶、𲚏（左土右觜，U+3268F，Unicode 17.0 擴展 J，輿圖常見）；
-   加 GT 中出現過的舊形 厯畱涖幷揷 與擴展 B 的 𡉥𣢟𥯮𥳑𭑃𪠘（第 12 輪，依 Yifang 指定）。共 37 字。
+   加 GT 中出現過的舊形 厯畱涖幷揷 與擴展 B 的 𡉥𣢟𥯮𥳑𭑃𪠘（第 12 輪，依 Yifang 指定）；加 敎、摉（第 12b 輪 T10）。共 39 字。
    全書固定同一排、不隨頁變化（隨頁變化等於洩露 GT）；按全書 GT 出現次數排列 */
-const OLD_FORMS = "爲卽荆靑鎭𲚏厯淸屛畱涖幷寛𡉥塡𥳑吿倂矶顚囘姸㑹䭾峯揷𣢟𥯮𭑃𪠘巓愼喩楡硏眞兪";
+const OLD_FORMS = "爲卽荆靑鎭𲚏厯淸敎屛畱涖幷寛𡉥塡𥳑吿倂矶摉顚囘姸㑹䭾峯揷𣢟𥯮𭑃𪠘巓愼喩楡硏眞兪";
+/* 按鈕集合的版本：每條紀錄記下 btn_set（T6）。〓 的計分以 Big5 加「錄文時畫面上的按鈕」為界（handoff v6 §12 第 11 條）。
+   已發布的版本：0 無按鈕；1 共 37 字（2026-11-04 01:54 UTC 發布，site 52bd858）；2 加 敎、摉，共 39 字。
+   沒有 btn_set 的舊紀錄，依時間推定：早於版本 1 發布時刻的算 0，其後算 1。 */
+const BTN_SET_ID = "2";
+const BTN_SETS = {"0":"", "1":"爲卽荆靑鎭𲚏厯淸屛畱涖幷寛𡉥塡𥳑吿倂矶顚囘姸㑹䭾峯揷𣢟𥯮𭑃𪠘巓愼喩楡硏眞兪", "2":OLD_FORMS};
+const BTN_SET1_FROM = Date.parse("2026-11-04T01:54:20Z");
+function btnSetOf(e){
+  if (e && e.btn_set != null && BTN_SETS[e.btn_set] != null) return {id:String(e.btn_set), inferred:false};
+  return {id:(e && e.ts && Date.parse(e.ts) >= BTN_SET1_FROM) ? "1" : "0", inferred:true};
+}
+/* 生僻字按鈕的提示附上字形描述（T10）：lr 左右，tb 上下，tmb 上中下，wrap 外包內 */
+const BTN_DESC = {"𲚏":["lr","土","觜"], "𡉥":["lr","土","中"], "𥳑":["tb","竹","閒"], "㑹":["tmb","亼","由","曰"], "䭾":["lr","馬","犬"],
+                  "𣢟":["lr","甘","欠"], "𥯮":["tb","竹","臾"], "𭑃":["tb","大","于"], "𪠘":["wrap","厂","解"]};
+function btnDesc(c){ const d = BTN_DESC[c]; return d ? fmt(t("desc_" + d[0]), {a:d[1], b:d[2], c:d[3] || ""}) : ""; }
 /* 只收統一漢字：相容漢字由 NFC 折回，變體選擇符（含 IVS 與相容漢字的標準化變體序列）一律去掉 */
 const VS_RE = /[︀-️]|\uDB40[\uDD00-\uDDEF]/g;
 function normText(s){ return String(s).normalize("NFC").replace(VS_RE, ""); }
@@ -1995,9 +2512,14 @@ function renderMarks(wrap){
     (m.type === "reading" ? escHtml(t("mark_reading_as")) + q(m.as) : "") +
     '<button type="button" data-k="' + k + '" title="' + escHtml(t("mark_remove")) + '" aria-label="' + escHtml(t("mark_remove")) + '">×</button></span>').join("");
 }
-/* 存檔前：NFC、去掉變體選擇符，標注重新對位 */
+/* 私用區字元（U+E000–F8FF、第 15、16 平面）：只在特定網站或字型裡有意義，從《異體字字典》等處複製字形時會帶進來（T5） */
+const PUA_RE = /[\uE000-\uF8FF\u{F0000}-\u{10FFFF}]/gu, PUA_ONE = /[\uE000-\uF8FF\u{F0000}-\u{10FFFF}]/u;
+/* 存檔前：去掉換行（T4）、NFC、去掉變體選擇符，標注重新對位；含私用區字元時拒收，回傳 null */
 function takeText(box){
-  const raw = box.value.trim(), v = normText(raw), r = realign(marksOf(wrapOf(box)), v, true), msgs = [];
+  const raw = box.value.replace(/[\r\n]+/g, "").trim(), v = normText(raw), msgs = [];
+  const pua = Array.from(new Set(v.match(PUA_RE) || []));
+  if (pua.length){ alert(fmt(t("pua_refused"), {list:pua.map(c => "U+" + c.codePointAt(0).toString(16).toUpperCase()).join(t("sep"))})); return null; }
+  const r = realign(marksOf(wrapOf(box)), v, true);
   if (v !== raw) msgs.push(t("norm_note"));
   if (r.lost) msgs.push(fmt(t("mark_dropped"), {n:r.lost}));
   return {v:v, marks:r.marks, msgs:msgs};
@@ -2013,8 +2535,23 @@ function buildEditTools(wrap){
     '<button type="button" class="btn small" data-mark="reading" data-i18n="mark_reading_btn"></button>' +
     '<span class="readingAsk hidden"><input type="text" class="readingIn" data-i18n-ph="mark_reading_ph">' +
     '<button type="button" class="btn small readingOk" data-i18n="mark_ok"></button></span></div>' +
-    '<div class="markList"></div>';
+    '<div class="markList"></div><div class="editMsg hidden" role="status"></div>';
   const ask = host.querySelector(".readingAsk"), inp = host.querySelector(".readingIn");
+  /* 錄文是一列，不換行（T4）：Enter 不作用，貼上的換行自動去掉；打進私用區字元時先提醒（T5） */
+  const msgEl = host.querySelector(".editMsg"); let msgTimer = null;
+  const flash = txt => { msgEl.textContent = txt; msgEl.classList.remove("hidden");
+    clearTimeout(msgTimer); msgTimer = setTimeout(() => msgEl.classList.add("hidden"), 6000); };
+  box.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229){ e.preventDefault(); flash(t("nl_blocked")); }
+  });
+  box.addEventListener("input", () => {
+    if (/[\r\n]/.test(box.value)){
+      const at = box.value.slice(0, box.selectionStart).replace(/[\r\n]+/g, "").length;
+      box.value = box.value.replace(/[\r\n]+/g, ""); box.setSelectionRange(at, at);
+      flash(t("nl_removed"));
+    }
+    if (PUA_ONE.test(box.value)) flash(t("pua_live"));
+  });
   let pending = null; // 誤刻：等待填入文意字的那個字
   host.querySelectorAll("[data-mark]").forEach(b => {
     b.onmousedown = e => e.preventDefault(); // 不讓按鈕搶走錄文框的游標
@@ -2113,7 +2650,7 @@ function markCol(e, type){
   return (e.marks || []).filter(m => m.type === type).map(m => (m.i + 1) + ":" + m.ch + (type === "reading" ? ">" + m.as : "")).join("|");
 }
 async function exportCsvBook(){
-  const rows = [["page","line_id","region_type","region_raw","line_type","line_raw","候選文","判定","修正後","備註","校對者","時間","mode","issue","unclear","reading"]];
+  const rows = [["page","line_id","region_type","region_raw","line_type","line_raw","候選文","判定","修正後","備註","校對者","時間","mode","issue","unclear","reading","build","btn_set"]];
   const hide = blindLocked();
   for (const pg of await bookPages()){
     const ed = (state.progress[pg.name] || {}).edits || {};
@@ -2122,7 +2659,7 @@ async function exportCsvBook(){
       const e = ed[L.id] || dr[L.id] || {}; // 未判定的列帶出草稿裡的備註與異常說明
       rows.push([pg.name, L.id, L.regionType, L.regionRaw, L.lineType, L.lineRaw,
                  hide ? "" : L.text, e.verdict || "未校", e.corrected || "", e.note || "", e.annotator || "", e.ts || "",
-                 lineMode(pg.name, ed[L.id]), e.issue || "", markCol(e, "unclear"), markCol(e, "reading")]);
+                 lineMode(pg.name, ed[L.id]), e.issue || "", markCol(e, "unclear"), markCol(e, "reading"), e.build || "", e.btn_set != null ? e.btn_set : ""]);
     }
   }
   dl("校書臺_整本校對.csv", toCsv(rows), "text/csv;charset=utf-8");
@@ -2143,7 +2680,7 @@ async function exportJsonBook(){
     if (dr && Object.keys(dr).length) pages[pg.name].drafts = dr;
   }
   dl("校書臺_進度_" + ($("who").value.trim() || "未署名") + ".json",
-     JSON.stringify({version:"0.6", annotator: $("who").value.trim(), ts: new Date().toISOString(), pages: pages}, null, 1),
+     JSON.stringify(Object.assign({version:APP_VERSION, annotator: $("who").value.trim(), ts: new Date().toISOString()}, fileMeta(), {pages: pages}), null, 1),
      "application/json");
   saveLocal();
 }
@@ -2164,11 +2701,25 @@ $("resumeFile").onchange = e => {
       state.progress[baseName(d.image_name || "page")] = {edits: normEdits(d.edits), idx: d.idx || 0};
     } else { alert(t("not_progress")); return; }
     if (d.annotator) $("who").value = d.annotator;
-    saveLocal(); renderPageList();
+    if (d.blind && d.blind.list) mergeReg(d.blind);
+    saveLocal(); syncBlind(); renderPageList(); if (state.pi >= 0) show();
     alert(t("resume_ok"));
   }).catch(() => alert(t("json_fail")));
 };
 $("who").onchange = saveLocal;
+/* 載入的進度 JSON 帶有盲轉寫清單時併入本機清單：新頁加入，撤回與完成以兩邊較早的時間為準，事件去重後併入 */
+function mergeReg(b){
+  for (const k in b.list){
+    const x = b.list[k], r = state.reg.list[k];
+    if (!r){ state.reg.list[k] = Object.assign({}, x); continue; }
+    if (x.released && !r.released){ r.released = x.released; r.releaseSrc = x.releaseSrc; }
+    if (x.done && (!r.done || x.done < r.done)) r.done = x.done;
+  }
+  const seen = new Set(state.reg.events.map(e => JSON.stringify(e)));
+  for (const e of (b.events || [])) if (!seen.has(JSON.stringify(e))) state.reg.events.push(e);
+  state.reg.events.sort((a, b) => (a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0));
+  logEvent("imported", {pages:Object.keys(b.list).length});
+}
 
 /* ============ 資料自檢 ============ */
 function median(a){ if (!a.length) return 0; const s = a.slice().sort((x,y)=>x-y); const m = s.length>>1;
@@ -2234,6 +2785,16 @@ function auditPage(p){
     if (arr.length > 3 && bad > 0)
       add("提示", fmt(t("region_id_label"), {id:k}), t("a_order"), fmt(t("a_order_d"), {n:arr.length, b:bad}));
   }
+  // 沒有可用多邊形的列（T2）：解析時略過，校者看不到它們
+  (p.parsed.skipped || []).forEach(x => add("錯誤", x.id, t("a_nocoords"),
+    x.why === "nocoords" ? t("a_nocoords_d") : fmt(t("a_fewpts_skip_d"), {n:x.n})));
+  // 全頁閱讀順序（T13）：直書右起，按工具顯示的順序（不含圖區），列中心不應往右跳；編號與「列序編號」相同
+  const seq = L.filter(l => l.regionType !== "Figure"), jumps = [];
+  for (let i = 1; i < seq.length; i++){
+    const cx0 = seq[i-1].x + seq[i-1].w/2, cx1 = seq[i].x + seq[i].w/2;
+    if (cx1 > cx0 + Math.max(4, mwPage * 0.5)) jumps.push((L.indexOf(seq[i-1]) + 1) + "→" + (L.indexOf(seq[i]) + 1));
+  }
+  if (jumps.length) add("提示", "", t("a_order_page"), fmt(t("a_order_page_d"), {n:jumps.length, list:jumps.slice(0, 8).join(t("sep")) + (jumps.length > 8 ? t("ellipsis") : "")}));
   R.forEach(r => {
     const n = L.filter(l => l.regionId === r.id).length;
     if (!n) add("提示", fmt(t("region_id_label"), {id:r.id}), t("a_emptyreg"), fmt(t("a_emptyreg_d"), {raw:(r.raw || t("empty_paren"))}));
@@ -2320,15 +2881,27 @@ function loadCmp(slot){ return e => {
    .catch(() => alert(I18N[LANG] && I18N[LANG].json_fail || I18N["zh-Hant"].json_fail));
 };}
 $("cmpA").onchange = loadCmp("A"); $("cmpB").onchange = loadCmp("B");
-$("foldOn").onchange = () => refreshCmp();
+$("cmpScheme").onchange = () => renderCmp();
+/* 篩選（T11）：只看某份清單（例如這一批的 blind_pages*.txt）上的頁 */
+$("cmpFilter").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const names = await readNames(f); e.target.value = "";
+  state.cmpFilter = {keys:new Set(names.map(regKey)), file:f.name, n:names.length};
+  $("cmpFilterClear").classList.remove("hidden"); renderCmp();
+};
+$("cmpFilterClear").onclick = () => { state.cmpFilter = null; $("cmpFilterClear").classList.add("hidden"); renderCmp(); };
 $("cmpFolder").onchange = () => refreshCmp();
-/* 盲轉寫紀錄的最終文字：本身是盲轉寫，或覆核後保留在 blind 欄位 */
-function blindText(e){
+/* 獨立轉寫的紀錄：盲轉寫；覆核後保留在 blind 欄位的盲轉寫；或在沒有候選文字的列上用覆核模式錄的「轉寫」
+   （校者沒有看過既有轉寫，按盲轉寫計入，第 12b 輪 T12，handoff v7 第 31 條） */
+function indepRec(e){
   if (!e) return null;
-  const b = e.mode === "blind" ? e : e.blind;
-  return b ? finalText({id:"_"}, {_: b}) : null;
+  if (e.mode === "blind") return {rec:e, src:"blind"};
+  if (e.blind) return {rec:e.blind, src:"blind"};
+  if (e.verdict === "轉寫" && !e.original) return {rec:e, src:"trans"};
+  return null;
 }
-/* 對照的列：兩份進度共同判定的列；或（與資料夾對照時）A 的盲轉寫列對資料夾 XML 裡的既有轉寫 */
+function blindText(e){ const x = indepRec(e); return x ? finalText({id:"_"}, {_: x.rec}) : null; }
+/* 對照的列：兩份進度共同判定的列；或（與資料夾對照時）A 的獨立轉寫列對資料夾 XML 裡的既有轉寫 */
 function cmpPairs(){
   const out = [];
   if ($("cmpFolder").checked){
@@ -2337,8 +2910,8 @@ function cmpPairs(){
       const p = byName[pg]; if (!p || !p.parsed) continue;
       const eA = cmp.A.pages[pg].edits || {};
       for (const L of p.parsed.lines){
-        const a = blindText(eA[L.id]); if (a === null) continue;
-        out.push({page:pg, id:L.id, type:L.lineType || "Main", a:a, b:L.text, orig:L.text});
+        const x = indepRec(eA[L.id]); if (!x) continue;
+        out.push({page:pg, id:L.id, type:L.lineType || "Main", a:finalText({id:"_"}, {_: x.rec}), b:L.text, orig:L.text, recA:x.rec, recB:null, srcA:x.src});
       }
     }
     return out;
@@ -2350,81 +2923,144 @@ function cmpPairs(){
     for (const L of lines){
       const ta0 = finalText(L, eA), tb0 = finalText(L, eB);
       if (ta0 === null || tb0 === null) continue;
-      out.push({page:pg, id:L.id, type:(eA[L.id] && eA[L.id].line_type) || L.line_type || "Main", a:ta0, b:tb0, orig:L.text || ""});
+      out.push({page:pg, id:L.id, type:(eA[L.id] && eA[L.id].line_type) || L.line_type || "Main", a:ta0, b:tb0, orig:L.text || "",
+                recA:eA[L.id], recB:eB[L.id], srcA:(indepRec(eA[L.id]) || {}).src || "review"});
     }
   }
   return out;
 }
 async function refreshCmp(){
+  await loadBig5();
   if ($("cmpFolder").checked && cmp.A && !blindLocked())
     for (const p of state.pages) if (cmp.A.pages[p.name]){ try{ await ensureParsed(p); }catch(err){} }
   renderCmp();
 }
+/* ===== 一致率的四種口徑（第 12b 輪 T11；handoff v6 §2.2、§5.1、第 11 條） =====
+   raw 未折合（僅 NFC）；t13 舊的 13 對表；dict 字典規則（等價表 v2）；geta 字典規則加 〓 計分：
+   〓 對上的字既不在 Big5、也不在錄文者當時畫面上的按鈕，算佔位對齊。
+   字對不分主從、不傳遞：喩 對 喻、喩 對 諭 都算一致，喻 對 諭 不算。 */
+const DICT_PAIRS = ["淸清","塡填","鎭鎮","顚顛","巓巔","愼慎","喩喻","喩諭","楡榆","硏研","硏硯","靑青","眞真","兪俞","囘回",
+                    "爲為","寛寬","卽即","吿告","屛屏","姸妍","倂併","荆荊","㑹會","䭾馱","峯峰"];
+const DICT_EQ = new Set();
+DICT_PAIRS.forEach(x => { const c = Array.from(x); DICT_EQ.add(c[0] + "\u0000" + c[1]); DICT_EQ.add(c[1] + "\u0000" + c[0]); });
+const SCHEMES = ["raw", "t13", "dict", "geta"];
+let BIG5 = null; // Unihan 18.0 kBigFive，13,064 字（big5.txt，第一次對照時才讀）
+async function loadBig5(){
+  if (BIG5) return BIG5;
+  try{ const r = await fetch("big5.txt"); if (!r.ok) throw 0;
+       BIG5 = new Set(Array.from((await r.text()).split(/\r?\n/).filter(l => l && l[0] !== "#").join(""))); }
+  catch(err){ BIG5 = null; }
+  return BIG5;
+}
+function eqFn(scheme, btnA, btnB){
+  if (scheme === "raw") return (x, y) => x === y;
+  if (scheme === "t13") return (x, y) => x === y || (VARIANT_FOLD[x] || x) === (VARIANT_FOLD[y] || y);
+  const d = (x, y) => x === y || DICT_EQ.has(x + "\u0000" + y);
+  if (scheme === "dict") return d;
+  return (x, y) => d(x, y) || (!!BIG5 && ((x === "〓" && y !== "〓" && !BIG5.has(y) && !btnA.has(y)) ||
+                                          (y === "〓" && x !== "〓" && !BIG5.has(x) && !btnB.has(x))));
+}
+function levEq(a, b, eq){
+  a = [...a]; b = [...b];
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = new Array(n+1); for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++){
+    const curr = new Array(n+1); curr[0] = i;
+    for (let j = 1; j <= n; j++)
+      curr[j] = Math.min(prev[j]+1, curr[j-1]+1, prev[j-1] + (eq(a[i-1], b[j-1]) ? 0 : 1));
+    prev = curr;
+  }
+  return prev[n];
+}
+const pct = (d, c) => c ? ((1 - d / c) * 100).toFixed(2) + "%" : "—";
+let cmpRows = []; // 全部未折合即有差異的列，供導出（不先折合，handoff v6 §5.4 第 5 項）
 function renderCmp(){
   const out = $("cmpOut");
   const folder = $("cmpFolder").checked;
   $("cmpBLabel").classList.toggle("hidden", folder);
-  disagreements = [];
+  disagreements = []; cmpRows = [];
   // 盲轉寫未完成時，對照結果（含既有轉寫與他人錄文）一律不顯示
   if (blindLocked()){ out.className = "empty"; out.textContent = fmt(t("blind_locked"), {n:blindRemaining()}); return; }
   if (folder ? !cmp.A : !(cmp.A && cmp.B)){ out.className = "empty";
     out.textContent = folder ? t("cmp_no_blind") :
       ((cmp.A || cmp.B) ? fmt(t("cmp_loaded"), {which:(cmp.A ? "A" : "") + (cmp.B ? "B" : "")}) : t("cmp_empty")); return; }
-  const pairs = cmpPairs();
-  if (folder && !pairs.length){ out.className = "empty"; out.textContent = t("cmp_no_blind"); return; }
+  let pairs = cmpPairs();
+  const flt = state.cmpFilter;
+  if (flt) pairs = pairs.filter(P => flt.keys.has(regKey(P.page)));
+  if (!pairs.length){ out.className = "empty"; out.textContent = folder ? t("cmp_no_blind") : t("cmp_none_pairs"); return; }
   out.className = "";
-  const fold = $("foldOn").checked;
-  const K = s => fold ? foldVariants(s) : String(s == null ? "" : s).normalize("NFC");
-  let lineBoth = 0, lineAgree = 0, chars = 0, dist = 0;
-  let rawAgree = 0, rawDist = 0, variantOnly = 0;
-  const byType = {};
+  const scheme = $("cmpScheme").value || "raw";
+  const tot = {}; SCHEMES.forEach(k => tot[k] = {dist:0, agree:0});
+  const byType = {}; let chars = 0, inferredA = 0, inferredB = 0, transN = 0;
   for (const P of pairs){
-    const ta0 = P.a, tb0 = P.b;
-    lineBoth++;
-    const ta = K(ta0), tb = K(tb0);
-    const lt = P.type;
-    byType[lt] = byType[lt] || {lines:0, agree:0, chars:0, dist:0};
-    byType[lt].lines++;
-    const d = lev(ta, tb), c = Math.max([...ta].length, [...tb].length);
-    chars += c; dist += d;
-    byType[lt].chars += c; byType[lt].dist += d;
-    const rd = lev(ta0, tb0);
-    rawDist += rd; rawAgree += (ta0 === tb0 ? 1 : 0);
-    if (ta0 !== tb0 && ta === tb) variantOnly++;
-    if (ta === tb){ lineAgree++; byType[lt].agree++; }
-    else disagreements.push({page:P.page, id:P.id, type:lt, a:ta0, b:tb0, orig:P.orig});
+    const bsA = btnSetOf(P.recA), bsB = P.recB ? btnSetOf(P.recB) : {id:"0", inferred:false};
+    if (bsA.inferred) inferredA++;
+    if (P.recB && bsB.inferred) inferredB++;
+    if (P.srcA === "trans") transN++;
+    const btnA = new Set(cps(BTN_SETS[bsA.id])), btnB = new Set(cps(BTN_SETS[bsB.id]));
+    const c = Math.max(cps(P.a).length, cps(P.b).length);
+    chars += c;
+    const d = {};
+    SCHEMES.forEach(k => { d[k] = levEq(P.a, P.b, eqFn(k, btnA, btnB)); tot[k].dist += d[k]; if (!d[k]) tot[k].agree++; });
+    const ty = byType[P.type] || (byType[P.type] = {lines:0, chars:0, d:{raw:0, t13:0, dict:0, geta:0}, rev:0, dirFree:0});
+    ty.lines++; ty.chars += c; SCHEMES.forEach(k => ty.d[k] += d[k]);
+    // 圖上標籤（T15）：按標籤（列 id）一對一配對，標籤之內計字序；另記整條逐字倒置的標籤，以及不計閱讀方向的事後分析
+    if (P.type === "figureLabel"){
+      const dr = levEq(cps(P.a).reverse().join(""), P.b, eqFn("raw"));
+      if (d.raw && !dr) ty.rev++;
+      ty.dirFree += Math.min(d.raw, dr);
+    }
+    const cls = !d.raw ? "" : (!d.dict ? "variant" : (!d.geta ? "geta" : "real"));
+    const row = {page:P.page, id:P.id, type:P.type, a:P.a, b:P.b, orig:P.orig, d:d, cls:cls, srcA:P.srcA, bsA:bsA, bsB:bsB};
+    if (d.raw) cmpRows.push(row);
+    if (d[scheme]) disagreements.push(row);
   }
-  const linePct = lineBoth ? (lineAgree/lineBoth*100).toFixed(1) : "0";
-  const charPct = chars ? ((1 - dist/chars)*100).toFixed(2) : "0";
-  const rawPct  = chars ? ((1 - rawDist/chars)*100).toFixed(2) : "0";
-  let h = '<div class="agree">' + fmt(t("cmp_agree"), {n:lineBoth, c:charPct, l:linePct}) + '</div>';
-  if (fold)
-    h += '<div class="banner ok">' + fmt(t("cmp_fold_ok"), {r:rawPct, v:variantOnly}) + '</div>';
-  else
-    h += '<div class="banner warn">' + t("cmp_fold_warn") + '</div>';
-  h += '<table class="grid"><tr><th>' + t("cmp_th_type") + '</th><th>' + t("cmp_th_lines") + '</th><th>' + t("cmp_th_lineagree") + '</th><th>' + t("cmp_th_charagree") + '</th></tr>';
+  const SL = k => t("sch_" + k);
+  let h = '<div class="agree">' + fmt(t("cmp_head"), {n:pairs.length, c:chars}) + '</div>';
+  if (flt) h += '<div class="banner ok">' + fmt(t("cmp_filter_on"), {file:escHtml(flt.file), n:flt.n}) + '</div>';
+  h += '<table class="grid"><tr><th>' + t("cmp_th_scheme") + '</th><th>' + t("cmp_th_dist") + '</th><th>' + t("cmp_th_charagree") + '</th><th>' + t("cmp_th_lineagree") + '</th></tr>';
+  SCHEMES.forEach(k => {
+    const na = k === "geta" && !BIG5;
+    h += '<tr><td>' + SL(k) + '</td><td>' + (na ? "—" : tot[k].dist) + '</td><td>' + (na ? "—" : pct(tot[k].dist, chars)) +
+         '</td><td>' + (na ? "—" : (tot[k].agree / pairs.length * 100).toFixed(1) + "%") + '</td></tr>';
+  });
+  h += '</table>';
+  const notes = [t("eqv_ver")];
+  if (!BIG5) notes.push(t("cmp_note_big5"));
+  if (inferredA || inferredB) notes.push(fmt(t("cmp_note_inferred"), {n:inferredA + inferredB}));
+  if (transN) notes.push(fmt(t("cmp_note_trans"), {n:transN}));
+  h += '<div class="banner ok" style="margin-top:12px">' + notes.join("<br>") + '</div>';
+  h += '<table class="grid"><tr><th>' + t("cmp_th_type") + '</th><th>' + t("cmp_th_lines") + '</th><th>' + t("cmp_th_chars") + '</th>' +
+       SCHEMES.map(k => '<th>' + SL(k) + '</th>').join("") + '</tr>';
   for (const k in byType){
-    const t = byType[k];
-    h += "<tr><td>" + (LABEL_LINE[k] || k) + "</td><td>" + t.lines + "</td><td>" +
-      (t.lines ? (t.agree/t.lines*100).toFixed(1) : "0") + "%</td><td>" +
-      (t.chars ? ((1 - t.dist/t.chars)*100).toFixed(2) : "0") + "%</td></tr>";
+    const ty = byType[k];
+    h += '<tr><td>' + (LABEL_LINE[k] || k) + '</td><td>' + ty.lines + '</td><td>' + ty.chars + '</td>' +
+         SCHEMES.map(s => '<td>' + ((s === "geta" && !BIG5) ? "—" : pct(ty.d[s], ty.chars)) + '</td>').join("") + '</tr>';
   }
-  h += "</table>";
+  h += '</table>';
+  const fl = byType.figureLabel;
+  if (fl) h += '<div class="banner ok" style="margin-top:12px">' + fmt(t("cmp_fig_note"), {n:fl.lines, r:fl.rev, p:pct(fl.dirFree, fl.chars)}) + '</div>';
+  const CL = c => c ? t("cls_" + c) : "";
   if (disagreements.length){
-    h += '<table class="grid" style="margin-top:18px"><tr><th>' + t("th_page") + '</th><th>' + t("th_line") + '</th><th>' + t("cmp_th_type") + '</th><th>' +
-         (cmp.A.annotator || "A") + '</th><th>' + (folder ? t("cmp_folder_col") : (cmp.B.annotator || "B")) + '</th></tr>';
+    h += '<div style="margin-top:18px">' + fmt(t("cmp_dis_head"), {s:SL(scheme), n:disagreements.length}) + '</div>';
+    h += '<table class="grid" style="margin-top:8px"><tr><th>' + t("th_page") + '</th><th>' + t("th_line") + '</th><th>' + t("cmp_th_type") + '</th><th>' +
+         escHtml(cmp.A.annotator || "A") + '</th><th>' + (folder ? t("cmp_folder_col") : escHtml(cmp.B.annotator || "B")) + '</th><th>' + t("cmp_th_class") + '</th></tr>';
     disagreements.slice(0, 300).forEach(d => {
-      h += "<tr><td class='serif'>" + d.page + "</td><td>" + d.id + "</td><td>" + (LABEL_LINE[d.type] || d.type) +
-        "</td><td class='serif'>" + d.a + "</td><td class='serif'>" + d.b + "</td></tr>";
+      h += "<tr><td class='serif'>" + escHtml(d.page) + "</td><td>" + escHtml(d.id) + "</td><td>" + (LABEL_LINE[d.type] || escHtml(d.type)) +
+        "</td><td class='serif'>" + escHtml(d.a) + "</td><td class='serif'>" + escHtml(d.b) + "</td><td>" + CL(d.cls) + "</td></tr>";
     });
     h += "</table>";
-  } else h += "<div>" + t("cmp_none") + "</div>";
+  } else h += "<div style='margin-top:18px'>" + t("cmp_none") + "</div>";
   out.innerHTML = h;
 }
+/* 分歧導出（T11）：全部未折合的差異，附分類與四種口徑的編輯距離；按篩選條件 */
 $("expDis").onclick = () => {
-  if (!disagreements.length){ alert(t("cmp_nodis")); return; }
-  const rows = [["page","line_id","line_type","A","B","候選文"]].concat(
-    disagreements.map(d => [d.page, d.id, d.type, d.a, d.b, d.orig]));
+  if (!cmpRows.length){ alert(t("cmp_nodis")); return; }
+  const bs = x => x.id + (x.inferred ? "（" + t("inferred") + "）" : "");
+  const rows = [["page","line_id","line_type","A","B","候選文","diff_class","d_raw","d_13","d_dict","d_geta","A_source","A_btn_set","B_btn_set","eqv_version"]].concat(
+    cmpRows.map(d => [d.page, d.id, d.type, d.a, d.b, d.orig, t("cls_" + d.cls), d.d.raw, d.d.t13, d.d.dict, d.d.geta,
+                      t("src_" + d.srcA), bs(d.bsA), $("cmpFolder").checked ? "" : bs(d.bsB), "v2-24-20261102"]));
   dl("校書臺_分歧列.csv", toCsv(rows), "text/csv;charset=utf-8");
 };
 
@@ -2482,6 +3118,7 @@ let _savedLang = null; try{ _savedLang = localStorage.getItem(LANG_KEY); }catch(
 applyLang(_savedLang || "zh-Hant");
 // 首次啟動：打開「使用說明」，並在其上顯示語言選單；選定後說明即以該語言顯示
 if (!_savedLang){ goTab("H"); openLangModal(true); }
+syncBlind(); // 本機登記的盲轉寫清單：狀態列先顯示，頁面載入後再更新
 restorePages();
 restorePagesFSA();
 </script>

@@ -4,6 +4,10 @@ SIL Open Font License, Version 1.1, except the Jigmo subsets (CC0, see Jigmo-LIC
 Inter            Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
 Newsreader       Copyright 2020 The Newsreader Project Authors (http://github.com/productiontype/Newsreader)
 LXGW WenKai TC   Copyright 2024 The LXGW WenKai Project Authors (https://github.com/lxgw/LxgwWenkaiTC)
+LXGW WenKai GB   Copyright 2022-2026 LXGW (https://github.com/lxgw/LxgwWenKaiGB), with Reserved Font Name
+                 '霞鹜', '霞鶩', '落霞孤鹜', '落霞孤鶩' and 'LXGW'. Copyright 2020 The Klee Project Authors
+                 (https://github.com/fontworks-fonts/Klee). Subset to WOFF2 solely for web font delivery,
+                 as the font's [ADDITIONAL PERMISSION] allows; the subsets are not installable desktop fonts.
 Noto Sans TC/SC  (c) 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
 Noto Serif TC    (c) 2017-2024 Adobe (http://www.adobe.com/).
 Noto Serif CJK TC (c) 2017-2024 Adobe (http://www.adobe.com/). Subset in jst-serif-noto.woff2.
