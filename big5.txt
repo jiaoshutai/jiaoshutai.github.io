@@ -1,4 +1,5 @@
 # Big5 ideographs: Unicode 18.0.0 Unihan kBigFive (Unihan_OtherMappings.txt, 2026-07-31), 13064 characters. Used by the 〓 scoring scheme (handoff v6 §12 no. 11).
+# Derived from the Unicode Character Database (Unihan), © 1991-2026 Unicode, Inc., under the Unicode License v3; see Unicode-LICENSE.txt.
 一丁七万丈三上下丌不与丏丐丑且丕世丘丙丞丟並丫中丮丰丱串丳丸丹主丼乂乃久乇么之乍乎乏乒乓乖乘乙乜九乞也乩乳乾乿亂亃亄了予事二亍于云互亓五井亙些亞亟亡亢交亥亦亨享京亭亮亳亶亹人什仁仂仃仄仆仇仈仉今介仍仔
 仕他仗付仙仚仜仝仞仟仡代令以仨仩仰仱仲仳仴仵件价任份仿伀企伂伄伅伈伉伊伋伍伎伏伐休伒伓伔伕优伙伝伢伬伭伯估伳伴伶伸伺伻似伽伾伿佁佃但佇佈佉佌位低住佐佑佒体佔何佖佗佘余佚佛作佝佞佟你佡佢佣佤佧佩佪佫佬佮
 佯佰佳佴併佶佷佸佹佺佻佼佽佾使侀侁侂侃侄侅來侇侈侉例侍侏侐侑侒侔侕侖侗侘侚供侜依侞侮侯侲侳侵侶侷侹侺侻便俀俁係促俄俅俇俉俊俋俍俎俏俐俑俓俔俖俗俘俙俚俛俜保俞俟俠信俬修俯俱俳俴俵俶俷俸俺俾倀倅倆倇倉個倌
