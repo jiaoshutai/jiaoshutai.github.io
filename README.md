@@ -28,7 +28,8 @@
 <ol type="1">
 <li>三種配色主題與使用說明頁的裝飾圖；</li>
 <li>依最新的轉寫規則更新介面；</li>
-<li>加入盲轉寫模式；</li>
+<li>加入並完善盲轉寫模式，使錄文者在獨立錄文完成之前始終看不到既有轉寫；</li>
+<li>列影像可向左或向右旋轉 90°，便於閱讀斜寫或倒寫的圖上標籤；</li>
 </ol>
 </li>
 <li>修正錯誤：
@@ -80,7 +81,8 @@ Since October 2026, Claude Code (Anthropic) has written most of the code under t
 <ol type="1">
 <li>the three color themes and the Help-page decoration;</li>
 <li>interface changes that follow the latest transcription rules;</li>
-<li>a blind-transcription mode;</li>
+<li>a blind-transcription mode, added and since refined, so that transcribers cannot see existing transcriptions until their independent transcription is complete;</li>
+<li>line images that can be rotated 90° to the left or right, for reading slanted or upside-down figure labels;</li>
 </ol>
 </li>
 <li>fixing bugs:
