@@ -256,6 +256,11 @@ table.grid tr.doneRow td{background:#F2F7F3}
 .help .helpFig{display:flex; flex-wrap:wrap; gap:16px; margin:10px 0 4px}
 .help .helpFig > span{display:flex; flex-direction:column; align-items:center; gap:2px}
 .help .helpFig img{height:76px; width:auto; border:1px solid var(--line); border-radius:4px; background:#fff}
+.help .helpRepo{margin-top:26px; padding-top:14px; border-top:1px solid var(--line); font-size:16px; color:var(--tx2)}
+.help .helpRepo a{color:var(--ink); text-decoration:underline; text-decoration-color:var(--dk);
+  text-decoration-thickness:1px; text-underline-offset:4px}
+.help .helpRepo a:hover{text-decoration-thickness:2px}
+.help .helpRepo a:focus-visible{outline:2px solid var(--dk); outline-offset:2px; border-radius:2px}
 .bronze{position:absolute; z-index:0; top:-24px; bottom:-8px; left:730px; right:-200px; pointer-events:none;
   -webkit-mask:linear-gradient(90deg, transparent 0%, #000 24%, #000 54%, transparent 76%), linear-gradient(180deg, transparent 0%, #000 12%, #000 86%, transparent 100%);
   -webkit-mask-composite:source-in;
@@ -523,6 +528,7 @@ table.grid tr.doneRow td{background:#F2F7F3}
     <h2 data-i18n="help_h_two">兩條提醒</h2>
     <ul><li data-i18n-html="help_two1"></li>
     <li data-i18n-html="help_two2"></li></ul>
+    <p class="helpRepo"><span data-i18n="help_repo_pre">安裝方法、AI 使用聲明、圖像來源與授權，見 </span><a href="https://github.com/jiaoshutai/jiaoshutai.github.io#readme" target="_blank" rel="noopener noreferrer" data-i18n="help_repo_link">GitHub 上的專案說明</a><span data-i18n="help_repo_post">。</span></p>
   </div>
   <div class="bronze" aria-hidden="true"><div></div></div>
   </div>
@@ -611,6 +617,9 @@ const I18N = {
 "help_h_two":"兩條提醒",
 "help_two1":"書上的朱筆圈點是句讀符號，錄文時略去。",
 "help_two2":"轉錄面板下方頁面原圖可以直接點擊某一列跳轉；綠色表示已經校過。",
+"help_repo_pre":"安裝方法、AI 使用聲明、圖像來源與授權，見 ",
+"help_repo_link":"GitHub 上的專案說明",
+"help_repo_post":"。",
 "footer":"校書臺 v0.7 · 單文件離線運行 · 數據只存在本機",
 "rot_left":"↺ 90°",
 "rot_right":"↻ 90°",
@@ -815,6 +824,9 @@ const I18N = {
 "help_h_two":"两条提醒",
 "help_two1":"书上的朱笔圈点是句读符号，录文时略去。",
 "help_two2":"转录面板下方页面原图可以直接点击某一列跳转；绿色表示已经校过。",
+"help_repo_pre":"安装方法、AI 使用声明、图像来源与授权，见 ",
+"help_repo_link":"GitHub 上的项目说明",
+"help_repo_post":"。",
 "footer":"校书台 v0.7 · 单文件离线运行 · 数据只存在本机",
 "rot_left":"↺ 90°",
 "rot_right":"↻ 90°",
@@ -1019,6 +1031,9 @@ const I18N = {
 "help_h_two":"Two reminders",
 "help_two1":"The vermilion circles and dots on the page are punctuation marks; leave them out of the transcription.",
 "help_two2":"Click any line on the page image below the transcription panel to jump to it; green means already checked.",
+"help_repo_pre":"For installation, AI use, image credits and the license, see the ",
+"help_repo_link":"README on GitHub",
+"help_repo_post":".",
 "footer":"Proofreading Desk v0.7 · single file, runs offline · data stays on your machine",
 "rot_left":"↺ 90°",
 "rot_right":"↻ 90°",
@@ -1170,7 +1185,7 @@ const I18N = {
 }
 ;
 /* 版本：tools/build_sw.py 每次建置時把 build id 寫在這裡（與 sw.js 的快取名相同），每條紀錄與進度 JSON 都記下它（第 12b 輪 T6） */
-const BUILD_ID = "2cbadbf196cd";
+const BUILD_ID = "054f9c316bfd";
 const APP_VERSION = "0.7";
 const LANG_KEY = "jiaoshutai_lang";
 let LANG = "zh-Hant";
