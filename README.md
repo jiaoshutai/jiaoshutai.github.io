@@ -46,8 +46,17 @@
 
 ## 圖像來源
 
-- **Icon**：作者設計，照片由 Jingyuan Liu 提供。
-- **使用說明頁裝飾圖**：取自西漢日月四神紋錯金青銅當盧，出土於江西南昌海昏侯劉賀墓，現藏江西省博物館。剪影由 Claude Design 依[百度百科](https://baike.baidu.com/item/%E8%A5%BF%E6%B1%89%E6%97%A5%E6%9C%88%E5%9B%9B%E7%A5%9E%E7%BA%B9%E9%94%99%E9%87%91%E9%9D%92%E9%93%9C%E5%BD%93%E5%8D%A2/64146354)的照片製作。
+1. **Icon**：作者設計，照片由 Jingyuan Liu 提供。
+2. **使用說明頁裝飾圖**：取自西漢日月四神紋錯金青銅當盧，出土於江西南昌海昏侯劉賀墓，現藏江西省博物館。剪影由 Claude Design 依[百度百科](https://baike.baidu.com/item/%E8%A5%BF%E6%B1%89%E6%97%A5%E6%9C%88%E5%9B%9B%E7%A5%9E%E7%BA%B9%E9%94%99%E9%87%91%E9%9D%92%E9%93%9C%E5%BD%93%E5%8D%A2/64146354)的照片製作。
+3. **使用說明頁書影**（「錄字規則」中的 領、直）：截自《巴陵縣志》書影。掃描件由 HathiTrust 數位圖書館提供，原書藏哈佛大學，HathiTrust 標示為公有領域（[書目記錄](https://catalog.hathitrust.org/Record/100367669)）。
+
+## 授權
+
+校書臺的程式碼以 MIT 授權發布，全文見 [LICENSE](LICENSE)。以下各項不在此授權範圍內：
+
+1. **圖像**：icon、使用說明頁裝飾圖與書影，來源見「圖像來源」；
+2. **字型**：各依其授權，見 [fonts/LICENSE.txt](fonts/LICENSE.txt) 與 [fonts/Jigmo-LICENSE.txt](fonts/Jigmo-LICENSE.txt)；
+3. **Big5 字表**（big5.txt）：取自 Unicode 的 Unihan 資料，依 Unicode License v3，見 [Unicode-LICENSE.txt](Unicode-LICENSE.txt)。
 
 ---
 
@@ -99,5 +108,14 @@ The author tested every change and is responsible for the tool.
 
 ## Image credits
 
-- **Icon:** designed by the author, with photographs provided by Jingyuan Liu.
-- **Help-page decoration:** based on a Western Han gold-inlaid bronze horse frontlet (*danglu*) with sun, moon and Four Spirits motifs, excavated from the tomb of Liu He, Marquis of Haihun, in Nanchang, Jiangxi, and now in the Jiangxi Provincial Museum. Claude Design made the silhouette from a photograph on [Baidu Baike](https://baike.baidu.com/item/%E8%A5%BF%E6%B1%89%E6%97%A5%E6%9C%88%E5%9B%9B%E7%A5%9E%E7%BA%B9%E9%94%99%E9%87%91%E9%9D%92%E9%93%9C%E5%BD%93%E5%8D%A2/64146354).
+1. **Icon:** designed by the author, with photographs provided by Jingyuan Liu.
+2. **Help-page decoration:** based on a Western Han gold-inlaid bronze horse frontlet (*danglu*) with sun, moon and Four Spirits motifs, excavated from the tomb of Liu He, Marquis of Haihun, in Nanchang, Jiangxi, and now in the Jiangxi Provincial Museum. Claude Design made the silhouette from a photograph on [Baidu Baike](https://baike.baidu.com/item/%E8%A5%BF%E6%B1%89%E6%97%A5%E6%9C%88%E5%9B%9B%E7%A5%9E%E7%BA%B9%E9%94%99%E9%87%91%E9%9D%92%E9%93%9C%E5%BD%93%E5%8D%A2/64146354).
+3. **Page images in Help** (領 and 直 under 'Entering characters'): cropped from scans of the *Baling xianzhi* provided by HathiTrust Digital Library, from originals held at Harvard University and marked public domain by HathiTrust ([catalog record](https://catalog.hathitrust.org/Record/100367669)).
+
+## License
+
+The code of 校書臺 is released under the MIT License; see [LICENSE](LICENSE). The following are not covered by it:
+
+1. **Images:** the icon, the Help-page decoration and the page images in Help; see Image credits for their sources.
+2. **Fonts:** each under its own license; see [fonts/LICENSE.txt](fonts/LICENSE.txt) and [fonts/Jigmo-LICENSE.txt](fonts/Jigmo-LICENSE.txt).
+3. **Big5 list** (big5.txt): derived from Unicode's Unihan data, under the Unicode License v3; see [Unicode-LICENSE.txt](Unicode-LICENSE.txt).
